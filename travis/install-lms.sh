@@ -2,9 +2,14 @@
 
 set -e
 
-mkdir ~/lms
-cd ~/lms
+if ! [ -d "dependencies" ]; then
+    mkdir "dependencies"
+fi
 
-git clone https://github.com/TiarkRompf/virtualization-lms-core
-cd virtualization-lms-core
-sbt publish-local
+cd "dependencies"
+
+git clone "https://github.com/TiarkRompf/virtualization-lms-core"
+
+cd "virtualization-lms-core"
+
+sbt compile

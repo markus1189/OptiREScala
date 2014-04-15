@@ -10,7 +10,8 @@ object Build extends Build {
   lazy val root = Project(id = "root", base = file(".")).settings(
     name := "OptiREScala",
 
-    scalacOptions ++= Seq( "-deprecation",
+    scalacOptions ++= Seq(
+      "-deprecation",
       "-unchecked",
       "-feature",
       "-optimise",
@@ -23,16 +24,16 @@ object Build extends Build {
     // required for -Yvirtualize:
     scalaOrganization := "org.scala-lang.virtualized",
 
-    libraryDependencies ++= Seq( "org.scalatest" %% "scalatest" % "2.1.2"
-      , "EPFL" %% "lms" % "0.3-SNAPSHOT"
-      , "org.scala-lang.virtualized" % "scala-compiler" % virtScala
-      , "org.scala-lang.virtualized" % "scala-library" % virtScala
-      , "org.scala-lang" % "scala-actors" % virtScala
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % "2.1.2",
+      "org.scala-lang.virtualized" % "scala-compiler" % virtScala,
+      "org.scala-lang.virtualized" % "scala-library" % virtScala,
+      "org.scala-lang" % "scala-actors" % virtScala
     )
 
   ).dependsOn(
-    // Depend on REScala repository
-    RootProject(file("project/REScala-clone"))
+    RootProject(file("dependencies/REScala"))
+  ).dependsOn(
+    RootProject(file("dependencies/virtualization-lms-core"))
   )
-
 }

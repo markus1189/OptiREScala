@@ -2,10 +2,9 @@
 
 set -e
 
-mkdir ~/bin
-cd ~/bin
+if ! [ -d "$HOME/bin" ]; then
+    mkdir "$HOME/bin"
+fi
 
-curl -s https://raw.github.com/paulp/sbt-extras/master/sbt > sbt
-chmod +x sbt
-
-cd $HOME
+curl -s "https://raw.github.com/paulp/sbt-extras/master/sbt" > "$HOME/bin/sbt"
+chmod +x "$HOME/bin/sbt"
