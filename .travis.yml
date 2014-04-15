@@ -1,0 +1,14 @@
+language: scala
+
+env:
+  - PATH="$HOME/bin:$PATH"
+
+scala:
+   - 2.10.2
+
+before_install:
+  - travis/install-sbt-script.sh
+  - travis/install-lms.sh
+
+script:
+  - travis/build.sh
