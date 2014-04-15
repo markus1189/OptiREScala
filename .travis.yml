@@ -8,6 +8,7 @@ scala:
 
 before_install:
   - travis/install-sbt-script.sh
+  - travis/install-rescala.sh
   - travis/install-lms.sh
 
 script:

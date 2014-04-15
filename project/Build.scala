@@ -3,8 +3,10 @@ import Keys._
 
 object Build extends Build {
 
+  // version of virtualized scala that is used
   val virtScala = "2.10.2"
 
+  // The OptiREScala project
   lazy val root = Project(id = "root", base = file(".")).settings(
     name := "OptiREScala",
 
@@ -29,7 +31,8 @@ object Build extends Build {
     )
 
   ).dependsOn(
-    RootProject(uri("https://github.com/guidosalva/REScala.git"))
+    // Depend on REScala repository
+    RootProject(file("project/REScala-clone"))
   )
 
 }
