@@ -3,10 +3,21 @@ package react.lms.syntaxops
 import scala.language.implicitConversions
 
 // avoid name clashes with object factory methods
-import react.{Signal => RESignal}
-import scala.virtualization.lms.common.{Base, BaseExp}
+import react.{Signal => RESignal, DepHolder}
+import scala.virtualization.lms.common.{Base, BaseExp, FunctionsExp, ScalaGenFunctions}
 
 trait SignalSyntax extends Base {
+  object Signal {
+    def apply[A:Manifest](
+      deps: Rep[List[DepHolder]]
+    )(
+      expr: Rep[RESignal[A]] => Rep[A]
+    ) = sig_ops_newSignal(deps, expr)
+  }
+
+  def sig_ops_newSignal[A:Manifest](deps: Rep[List[DepHolder]],
+    expr: Rep[RESignal[A]] => Rep[A]): Rep[RESignal[A]]
+
   implicit def toSignalOps[A:Manifest](s: Rep[RESignal[A]]) = SignalOps(s)
 
   case class SignalOps[A:Manifest](sig: Rep[RESignal[A]]) {
@@ -21,8 +32,12 @@ trait SignalSyntax extends Base {
   def sig_ops_apply_dep[A:Manifest](sig: Rep[RESignal[A]], depSig: Rep[RESignal[_]]): Rep[A]
 }
 
-trait SignalOps extends BaseExp {
+trait SignalOps extends BaseExp with FunctionsExp {
   this: SignalSyntax =>
+
+  def sig_ops_newSignal[A:Manifest](deps: Exp[List[DepHolder]],
+    expr: Exp[RESignal[A]] => Exp[A]): Exp[RESignal[A]] = SignalCreation(deps,expr)
+  case class SignalCreation[A:Manifest](deps: Exp[List[DepHolder]], expr: Exp[RESignal[A]] => Exp[A]) extends Def[RESignal[A]]
 
   override def sig_ops_getValue[A:Manifest](s: Exp[RESignal[A]]): Exp[A] = SigGetValue(s)
   case class SigGetValue[A:Manifest](s: Exp[RESignal[A]]) extends Def[A]
@@ -30,8 +45,8 @@ trait SignalOps extends BaseExp {
   override def sig_ops_apply[A:Manifest](s: Exp[RESignal[A]]): Exp[A] = SigApply(s)
   case class SigApply[A:Manifest](s: Exp[RESignal[A]]) extends Def[A]
 
-  override def sig_ops_apply_dep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignal[_]]): Exp[A]
-  case class SigApplyDep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignal[A]]) extends Def[A]
+  override def sig_ops_apply_dep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignal[_]]): Exp[A] = SigApplyDep(sig,depSig)
+  case class SigApplyDep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignal[_]]) extends Def[A]
 }
 
 trait ScalaGenSignals extends ScalaGenReactiveBase {
@@ -39,6 +54,7 @@ trait ScalaGenSignals extends ScalaGenReactiveBase {
   import IR._
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
+    case SignalCreation(deps,expr) => ???
     case _ => super.emitNode(sym,node)
   }
 }

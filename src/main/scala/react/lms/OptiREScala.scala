@@ -25,7 +25,8 @@ trait ReactivityExp
 
 trait ScalaGenReactivity extends ScalaGenReactiveBase
     with ScalaGenEffect
-    with ScalaGenVars {
+    with ScalaGenVars
+    with ScalaGenSignals {
   val IR: ReactivityExp
   import IR._
 }
