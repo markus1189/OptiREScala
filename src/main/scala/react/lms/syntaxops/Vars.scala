@@ -39,7 +39,38 @@ trait VarSyntax extends Base {
   def var_ops_toSignal[A:Manifest](v: Rep[REVar[A]]): Rep[RESignal[A]]
 }
 
-trait VarOps extends BaseExp {
+/** Implement the abstract syntax methods, typically introducing new
+    DSL 'nodes' that will later be used in the corresponding ScalaGen-
+    trait*/
+trait VarOps extends EffectExp {
+  this: VarSyntax =>
+
+  override def var_ops_newVar[A:Manifest](v: Exp[A]): Exp[REVar[A]] = VarCreation(v)
+  case class VarCreation[A:Manifest](
+    value: Exp[A]) extends Def[REVar[A]]
+
+  override def var_ops_setVal[A:Manifest](v: Exp[REVar[A]], x: Exp[A]): Exp[Unit] = SetValue(v,x)
+  case class SetValue[A:Manifest](
+    varToSet: Exp[REVar[A]], newValue: Exp[A]) extends Def[Unit]
+
+  override def var_ops_update[A:Manifest](v: Exp[REVar[A]], x: Exp[A]): Exp[Unit] = UpdateValue(v,x)
+  case class UpdateValue[A:Manifest](
+    varToUpdate: Exp[REVar[A]], newValue: Exp[A]) extends Def[Unit]
+
+  override def var_ops_getValue[A:Manifest](v: Exp[REVar[A]]): Exp[A] = GetValue(v)
+  case class GetValue[A:Manifest](
+    varToAccess: Exp[REVar[A]]) extends Def[A]
+
+  override def var_ops_apply[A:Manifest](v: Exp[REVar[A]]): Exp[A] = VarApply(v)
+  case class VarApply[A:Manifest](
+    varToApply: Exp[REVar[A]]) extends Def[A]
+
+  override def var_ops_apply_sig[A:Manifest](v: Exp[REVar[A]], s: Exp[RESignal[_]]): Exp[A] = VarApplyWithDep(v,s)
+  case class VarApplyWithDep[A:Manifest](
+    varToApply: Exp[REVar[A]], dep: Exp[RESignal[_]]) extends Def[A]
+
+  override def var_ops_toSignal[A:Manifest](v: Exp[REVar[A]]): Exp[RESignal[A]] = VarToSignal(v)
+  case class VarToSignal[A:Manifest](varToConvert: Exp[REVar[A]]) extends Def[RESignal[A]]
 }
 
 trait ScalaGenVars extends ScalaGenBase {
