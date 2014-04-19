@@ -11,11 +11,14 @@ trait ReactiveDSLGen extends ScalaGenReactivity with ScalaCodeGenPkg {
   val IR: ReactiveDSLExp with ScalaOpsPkgExp
 }
 
-trait Reactivity extends VarSyntax
+trait Reactivity
+    extends VarSyntax
+    with SignalSyntax
 
 trait ReactivityExp
     extends Reactivity
     with VarOps
+    with SignalOps
     with ListOpsExp
     with SeqOpsExp
     with EffectExp
