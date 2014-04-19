@@ -49,7 +49,7 @@ trait VarOps extends EffectExp {
   case class VarCreation[A:Manifest](
     value: Exp[A]) extends Def[REVar[A]]
 
-  override def var_ops_setVal[A:Manifest](v: Exp[REVar[A]], x: Exp[A]): Exp[Unit] = SetValue(v,x)
+  override def var_ops_setVal[A:Manifest](v: Exp[REVar[A]], x: Exp[A]): Exp[Unit] = reflectEffect(SetValue(v,x))
   case class SetValue[A:Manifest](
     varToSet: Exp[REVar[A]], newValue: Exp[A]) extends Def[Unit]
 
@@ -79,6 +79,8 @@ trait ScalaGenVars extends ScalaGenReactiveBase {
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
     case VarCreation(v) => emitValDef(sym, rescalaPkg + "Var(" + quote(v) + ")")
+    case GetValue(v) => emitValDef(sym, quote(v) + ".getValue")
+    case SetValue(v,x) => emitValDef(sym, quote(v) + ".setVal(" + quote(x) + ")")
     case _ => super.emitNode(sym,node)
   }
 }

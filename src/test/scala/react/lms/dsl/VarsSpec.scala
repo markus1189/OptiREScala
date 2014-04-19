@@ -16,11 +16,46 @@ class VarsSpec extends WordSpec with Matchers {
       val res = prog.compile(prog.f).apply( () )
       res.getVal should equal(42)
     }
+
+    "be asked for its value" in {
+      val prog = new GetFromVarProg with ReactiveDSLExp with CompileScala { self =>
+        override val codegen = new ReactiveDSLGen {
+          val IR: self.type = self
+        }
+      }
+
+      val res = prog.compile(prog.f).apply( () )
+      res should equal(42)
+    }
+
+    "be changed to another value" in {
+      val prog = new SetVarProg with ReactiveDSLExp with CompileScala { self =>
+        override val codegen = new ReactiveDSLGen {
+          val IR: self.type = self
+        }
+      }
+
+      val res = prog.compile(prog.f).apply( () )
+      res.getVal should equal(21)
+    }
   }
 }
 
 trait CreateVarProg extends ReactiveDSL {
-  def f(x : Rep[Unit]) = {
-    Var(42)
+  def f(x : Rep[Unit]) = Var(42)
+}
+
+trait GetFromVarProg extends ReactiveDSL {
+  def f(x:Rep[Unit]) = {
+    val v = Var(42)
+    v.getVal
+  }
+}
+
+trait SetVarProg extends ReactiveDSL {
+  def f(x:Rep[Unit]) = {
+    val v = Var(42)
+    v.setVal(21)
+    v
   }
 }
