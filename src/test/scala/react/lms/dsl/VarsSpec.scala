@@ -3,6 +3,7 @@ package lms.react.dsl
 import org.scalatest._
 import virtualization.lms.common.CompileScala
 import react.lms._
+import react._
 
 class VarsSpec extends WordSpec with Matchers {
   "A OptiREScala Var" can {
@@ -26,6 +27,17 @@ class VarsSpec extends WordSpec with Matchers {
 
       val res = prog.compile(prog.f).apply( () )
       res should equal(42)
+    }
+
+    "be asked for its value using the apply method" in {
+      val prog = new ApplyVarProg with ReactiveDSLExp with CompileScala { self =>
+        override val codegen = new ReactiveDSLGen {
+          val IR: self.type = self
+        }
+      }
+
+      val res = prog.compile(prog.f).apply( () )
+      res should equal(1337)
     }
 
     "be changed to another value" in {
@@ -57,5 +69,12 @@ trait SetVarProg extends ReactiveDSL {
     val v = Var(42)
     v.setVal(21)
     v
+  }
+}
+
+trait ApplyVarProg extends ReactiveDSL {
+  def f(x:Rep[Unit]) = {
+    val v = Var(1337)
+    v()
   }
 }
