@@ -73,5 +73,12 @@ trait VarOps extends EffectExp {
   case class VarToSignal[A:Manifest](varToConvert: Exp[REVar[A]]) extends Def[RESignal[A]]
 }
 
-trait ScalaGenVars extends ScalaGenBase {
+trait ScalaGenVars extends ScalaGenReactiveBase {
+  val IR: VarOps
+  import IR._
+
+  override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
+    case VarCreation(v) => emitValDef(sym, rescalaPkg + "Var(" + quote(v) + ")")
+    case _ => super.emitNode(sym,node)
+  }
 }
