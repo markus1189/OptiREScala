@@ -1,9 +1,11 @@
 package react.lms.syntaxops
 
+// avoid name clashes with object factory methods
 import react.{Var => REVar,Signal => RESignal}
+
 import scala.language.implicitConversions
 
-import scala.virtualization.lms.common.{Base, ScalaGenBase, EffectExp}
+import scala.virtualization.lms.common.{Base, EffectExp}
 
 /** Define the available operations for the DSL users */
 trait VarSyntax extends Base {
@@ -13,7 +15,7 @@ trait VarSyntax extends Base {
 
   def var_ops_newVar[A:Manifest](v: Rep[A]): Rep[REVar[A]]
 
-  implicit def toVarOps[A:Manifest](v: Rep[REVar[A]]) = new VarOps(v)
+  implicit def toVarOps[A:Manifest](v: Rep[REVar[A]]) = VarOps(v)
 
   // After implicit conversion, this class receives the methods called
   // on a DSL version of a Var, ops defined here are available to
@@ -21,7 +23,7 @@ trait VarSyntax extends Base {
 
   // Defining an op here is delegated to an abstract method, whose
   // implementation will be in the corresponding -Ops trait.
-  class VarOps[A:Manifest](v: Rep[REVar[A]]) {
+  case class VarOps[A:Manifest](v: Rep[REVar[A]]) {
     def setVal(x: Rep[A]): Rep[Unit] = var_ops_setVal(v,x)
     def update(x: Rep[A]): Rep[Unit] = var_ops_update(v,x)
     def getValue: Rep[A] = var_ops_getValue(v)
