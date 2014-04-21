@@ -36,8 +36,12 @@ trait SignalOps extends BaseExp with FunctionsExp {
   this: SignalSyntax =>
 
   def sig_ops_newSignal[A:Manifest](deps: Exp[List[DepHolder]],
-    expr: Exp[RESignal[A]] => Exp[A]): Exp[RESignal[A]] = SignalCreation(deps,expr)
-  case class SignalCreation[A:Manifest](deps: Exp[List[DepHolder]], expr: Exp[RESignal[A]] => Exp[A]) extends Def[RESignal[A]]
+    expr: Exp[RESignal[A]] => Exp[A]): Exp[RESignal[A]] = SignalCreation(deps,fun(expr))
+
+  case class SignalCreation[A:Manifest](deps: Exp[List[DepHolder]],
+    expr: Exp[RESignal[A] => A]) extends Def[RESignal[A]] {
+    val t = manifest[A]
+  }
 
   override def sig_ops_getValue[A:Manifest](s: Exp[RESignal[A]]): Exp[A] = SigGetValue(s)
   case class SigGetValue[A:Manifest](s: Exp[RESignal[A]]) extends Def[A]
@@ -49,12 +53,20 @@ trait SignalOps extends BaseExp with FunctionsExp {
   case class SigApplyDep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignal[_]]) extends Def[A]
 }
 
-trait ScalaGenSignals extends ScalaGenReactiveBase {
+trait ScalaGenSignals extends ScalaGenReactiveBase with ScalaGenFunctions {
   val IR: SignalOps
   import IR._
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
-    case SignalCreation(deps,expr) => ???
+    case s@SignalCreation(deps,expr) => emitSignalCreation(s,sym)
     case _ => super.emitNode(sym,node)
+  }
+
+  def emitSignalCreation[A:Manifest](sigNode: SignalCreation[A], sym: Sym[Any]): Unit = {
+    val SignalCreation(deps,expr) = sigNode
+    val className = "SignalSynt[" + sigNode.t + "]" // use manifest for type ascription
+    val quotedDeps = "(" + quote(deps) + ")"
+    val quotedExpr = "{" + quote(expr) + "}"
+    emitValDef(sym, rescalaPkg + className + quotedDeps + quotedExpr )
   }
 }
