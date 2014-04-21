@@ -59,14 +59,19 @@ trait ScalaGenSignals extends ScalaGenReactiveBase with ScalaGenFunctions {
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
     case s@SignalCreation(deps,expr) => emitSignalCreation(s,sym)
+    case SigGetValue(s) => emitValDef(sym, quote(s) + ".getValue")
+    case SigApply(s) => emitValDef(sym, quote(s) + "()")
+    case SigApplyDep(s,dep) => ???
     case _ => super.emitNode(sym,node)
   }
 
   def emitSignalCreation[A:Manifest](sigNode: SignalCreation[A], sym: Sym[Any]): Unit = {
     val SignalCreation(deps,expr) = sigNode
+
     val className = "SignalSynt[" + sigNode.t + "]" // use manifest for type ascription
     val quotedDeps = "(" + quote(deps) + ")"
     val quotedExpr = "{" + quote(expr) + "}"
+
     emitValDef(sym, rescalaPkg + className + quotedDeps + quotedExpr )
   }
 }
