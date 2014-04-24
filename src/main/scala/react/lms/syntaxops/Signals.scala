@@ -4,7 +4,7 @@ import scala.language.implicitConversions
 
 // avoid name clashes with object factory methods
 import react.{Signal => RESignal, DepHolder}
-import scala.virtualization.lms.common.{Base, BaseExp, FunctionsExp, ScalaGenFunctions}
+import scala.virtualization.lms.common.{Base, BaseExp, FunctionsExp, ScalaGenFunctions, EffectExp}
 
 trait SignalSyntax extends Base {
   object Signal {
@@ -32,7 +32,7 @@ trait SignalSyntax extends Base {
   def sig_ops_apply_dep[A:Manifest](sig: Rep[RESignal[A]], depSig: Rep[RESignal[_]]): Rep[A]
 }
 
-trait SignalOps extends BaseExp with FunctionsExp {
+trait SignalOps extends BaseExp with FunctionsExp with EffectExp {
   this: SignalSyntax =>
 
   def sig_ops_newSignal[A:Manifest](deps: Exp[List[DepHolder]],
@@ -43,13 +43,16 @@ trait SignalOps extends BaseExp with FunctionsExp {
     val t = manifest[A]
   }
 
-  override def sig_ops_getValue[A:Manifest](s: Exp[RESignal[A]]): Exp[A] = SigGetValue(s)
+  override def sig_ops_getValue[A:Manifest](s: Exp[RESignal[A]]): Exp[A] =
+    reflectMutable(SigGetValue(s))
   case class SigGetValue[A:Manifest](s: Exp[RESignal[A]]) extends Def[A]
 
-  override def sig_ops_apply[A:Manifest](s: Exp[RESignal[A]]): Exp[A] = SigApply(s)
+  override def sig_ops_apply[A:Manifest](s: Exp[RESignal[A]]): Exp[A] =
+    reflectMutable(SigApply(s))
   case class SigApply[A:Manifest](s: Exp[RESignal[A]]) extends Def[A]
 
-  override def sig_ops_apply_dep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignal[_]]): Exp[A] = SigApplyDep(sig,depSig)
+  override def sig_ops_apply_dep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignal[_]]): Exp[A] =
+    reflectMutable(SigApplyDep(sig,depSig))
   case class SigApplyDep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignal[_]]) extends Def[A]
 }
 
