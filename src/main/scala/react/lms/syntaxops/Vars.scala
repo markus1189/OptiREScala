@@ -63,9 +63,11 @@ trait VarOps extends EffectExp {
   case class GetValue[A:Manifest](
     varToAccess: Exp[REVar[A]]) extends Def[A]
 
-  override def var_ops_apply[A:Manifest](v: Exp[REVar[A]]): Exp[A] = GetValue(v)
+  case class VarApply[A:Manifest](varToAccess: Exp[REVar[A]]) extends Def[A]
+  override def var_ops_apply[A:Manifest](v: Exp[REVar[A]]): Exp[A] =
+    reflectMutable(VarApply(v))
 
-  override def var_ops_apply_sig[A:Manifest](v: Exp[REVar[A]], s: Exp[RESignal[_]]): Exp[A] = VarApplyWithDep(v,s)
+  override def var_ops_apply_sig[A:Manifest](v: Exp[REVar[A]], s: Exp[RESignal[_]]): Exp[A] = reflectMutable(VarApplyWithDep(v,s))
   case class VarApplyWithDep[A:Manifest](
     varToApply: Exp[REVar[A]], dep: Exp[RESignal[_]]) extends Def[A]
 
@@ -82,6 +84,7 @@ trait ScalaGenVars extends ScalaGenReactiveBase {
     case SetValue(v,x) => emitValDef(sym, quote(v) + ".setVal(" + quote(x) + ")")
     case UpdateValue(v,x) => emitValDef(sym, quote(v) + ".update(" + quote(x) + ")")
     case GetValue(v) => emitValDef(sym, quote(v) + ".getValue")
+    case VarApply(v) => emitValDef(sym, quote(v) + "()")
     case VarApplyWithDep(v,dep) => emitValDef(sym, quote(v) + ".apply(" + quote(dep) + ")")
     case VarToSignal(v) => emitValDef(sym, quote(v) + ".toSignal")
     case _ => super.emitNode(sym,node)
