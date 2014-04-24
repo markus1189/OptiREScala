@@ -1,6 +1,6 @@
 package react.lms.optimizations
 
-import scala.virtualization.lms.common.{Base, EffectExp, ListOps}
+import scala.virtualization.lms.common.{Base, EffectExp, ListOps, FunctionBlocksExp}
 import react.lms.syntaxops.{SignalSyntax, SignalOps, VarOps}
 import react.{Signal => RESignal, DepHolder}
 
@@ -16,7 +16,7 @@ trait SignalInferenceSyntax extends Base {
   def new_inferred_signal[A:Manifest](f: Rep[RESignal[A]] => Rep[A]): Rep[RESignal[A]]
 }
 
-trait SignalInferenceOps  extends SignalInferenceSyntax with EffectExp with ListOps {
+trait SignalInferenceOps  extends SignalInferenceSyntax with EffectExp with ListOps with FunctionBlocksExp {
   this: SignalSyntax with SignalOps with VarOps =>
 
   override def new_inferred_signal[A:Manifest](
@@ -27,7 +27,7 @@ trait SignalInferenceOps  extends SignalInferenceSyntax with EffectExp with List
   }
 
   def inferDependencies[A:Manifest](f: Exp[RESignal[A]] => Exp[A]): Exp[List[DepHolder]] = {
-    val effects = effectSyms(f)
+    val effects = effectSyms(lambdaToBlock1(f))
     val nestedSyms = aliasSyms(f).map(findDefinition(_)).map(effectSyms(_)).flatten
     val onlySyms = (effects ++ nestedSyms).filter { case Sym(x) => true; case _ => false }
     val defs = onlySyms.map(findDefinition(_)).collect {
