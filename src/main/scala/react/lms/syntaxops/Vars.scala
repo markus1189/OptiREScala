@@ -80,7 +80,7 @@ trait ScalaGenVars extends ScalaGenReactiveBase {
   import IR._
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
-    case VarCreation(v) => emitValDef(sym, rescalaPkg + "Var(" + quote(v) + ")")
+    case VarCreation(v) => emitValDef(sym, rescalaPkg + "VarSynt(" + quote(v) + ")")
     case SetValue(v,x) => emitValDef(sym, quote(v) + ".setVal(" + quote(x) + ")")
     case UpdateValue(v,x) => emitValDef(sym, quote(v) + ".update(" + quote(x) + ")")
     case GetValue(v) => emitValDef(sym, quote(v) + ".getValue")
