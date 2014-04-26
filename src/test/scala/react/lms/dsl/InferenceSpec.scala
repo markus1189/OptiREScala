@@ -24,8 +24,8 @@ class InferenceSepc extends WordSpec with Matchers {
       // Check result of code generation
       val out = new java.io.StringWriter();
       prog.codegen.emitSource(prog.f, "F", new java.io.PrintWriter(out))
-      val p = new Regex("val x11 = List\\(x1,x3\\)")
-      out.toString.lines.exists { line => p.findAllIn(line).nonEmpty } should equal (true)
+      val p = new Regex("val x(\\d+) = List\\(x(\\d+),x(\\d+)\\)")
+      out.toString should include regex p
     }
   }
 }
