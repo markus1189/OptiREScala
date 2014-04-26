@@ -2,7 +2,7 @@ package react.lms.optimizations
 
 import scala.virtualization.lms.common.{Base, EffectExp, ListOps, FunctionBlocksExp}
 import react.lms.syntaxops.{SignalSyntax, SignalOps, VarOps}
-import react.{Signal => RESignal, DepHolder}
+import react.{SignalSynt => RESignal, DepHolder}
 
 /** Extend Syntax with a new form ISignal { } that infers dependencies */
 trait SignalInferenceSyntax extends Base {
@@ -33,6 +33,8 @@ trait SignalInferenceOps  extends SignalInferenceSyntax with EffectExp with List
     val defs = onlySyms.map(findDefinition(_)).collect {
       case Some(TP(_,Reflect(SigApply(x),_,_))) => x
       case Some(TP(_,Reflect(VarApply(x),_,_))) => x
+      case Some(TP(_,Reflect(SigApplyDep(x,_),_,_))) => x
+      case Some(TP(_,Reflect(VarApplyWithDep(x,_),_,_))) => x
     }
 
     list_new(defs)

@@ -1,7 +1,6 @@
 package react.lms.syntaxops
 
-// avoid name clashes with object factory methods
-import react.{Var => REVar,Signal => RESignal}
+import react.{VarSynt => REVar,SignalSynt => RESignal}
 
 import scala.language.implicitConversions
 

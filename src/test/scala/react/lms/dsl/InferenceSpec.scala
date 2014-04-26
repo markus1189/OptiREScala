@@ -3,7 +3,7 @@ package lms.react.dsl
 import org.scalatest._
 import virtualization.lms.common.CompileScala
 import react.lms._
-import react.{Var => REVar,Signal => RESignal}
+import react.{VarSynt => REVar,SignalSynt => RESignal}
 
 import scala.util.matching._
 
@@ -36,6 +36,6 @@ trait VarInferenceProg extends ReactiveDSL {
     val dep2 = Var(2)
     val dep3 = Var(3)
 
-    ISignal { _: Rep[RESignal[Int]] => dep1() + dep2.getVal + dep3() }
+    ISignal { s: Rep[RESignal[Int]] => dep1(s) + dep2.getVal + dep3(s) }
   }
 }

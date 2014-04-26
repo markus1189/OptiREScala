@@ -3,7 +3,7 @@ package react.lms.syntaxops
 import scala.language.implicitConversions
 
 // avoid name clashes with object factory methods
-import react.{Signal => RESignal, DepHolder}
+import react.{SignalSynt => RESignal, DepHolder}
 import scala.virtualization.lms.common.{Base, BaseExp, FunctionsExp, ScalaGenFunctions, EffectExp}
 
 trait SignalSyntax extends Base {
