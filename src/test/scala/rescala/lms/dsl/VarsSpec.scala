@@ -1,9 +1,9 @@
-package lms.react.dsl
+package rescala.lms.dsl
 
 import org.scalatest._
 import virtualization.lms.common.CompileScala
-import react.lms._
-import react._
+import rescala.lms._
+import rescala._
 
 class VarsSpec extends WordSpec with Matchers {
   "A OptiREScala Var" can {
@@ -15,7 +15,7 @@ class VarsSpec extends WordSpec with Matchers {
       }
 
       val res = prog.compile(prog.f).apply( () )
-      res.getVal should equal(42)
+      res.get should equal(42)
     }
 
     "be asked for its value" in {
@@ -48,7 +48,7 @@ class VarsSpec extends WordSpec with Matchers {
       }
 
       val res = prog.compile(prog.f).apply( () )
-      res.getVal should equal(21)
+      res.get should equal(21)
     }
   }
 }
@@ -60,14 +60,14 @@ trait CreateVarProg extends ReactiveDSL {
 trait GetFromVarProg extends ReactiveDSL {
   def f(x:Rep[Unit]) = {
     val v = Var(42)
-    v.getVal
+    v.get
   }
 }
 
 trait SetVarProg extends ReactiveDSL {
   def f(x:Rep[Unit]) = {
     val v = Var(42)
-    v.setVal(21)
+    v.set(21)
     v
   }
 }

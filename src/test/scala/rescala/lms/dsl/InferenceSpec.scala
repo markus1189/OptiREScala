@@ -1,9 +1,9 @@
-package lms.react.dsl
+package rescala.lms.dsl
 
 import org.scalatest._
 import virtualization.lms.common.CompileScala
-import react.lms._
-import react.{VarSynt => REVar,SignalSynt => RESignal}
+import rescala.lms._
+import rescala.{Var => REVar,Signal => RESignal, SignalSynt => RESignalSynt}
 
 import scala.util.matching._
 
@@ -19,7 +19,7 @@ class InferenceSepc extends WordSpec with Matchers {
       val s = prog.compile(prog.f).apply( () )
 
       // Check the result value
-      s.getVal should equal(1+2+3)
+      s.get should equal(1+2+3)
 
       // Check result of code generation
       val out = new java.io.StringWriter();
@@ -36,6 +36,6 @@ trait VarInferenceProg extends ReactiveDSL {
     val dep2 = Var(2)
     val dep3 = Var(3)
 
-    ISignal { s: Rep[RESignal[Int]] => dep1(s) + dep2.getVal + dep3(s) }
+    ISignal { s: Rep[RESignalSynt[Int]] => dep1(s) + dep2.get + dep3(s) }
   }
 }

@@ -1,8 +1,8 @@
-package react.lms
+package rescala.lms
 
 import scala.virtualization.lms.common._
-import react.lms.syntaxops._
-import react.lms.optimizations._
+import rescala.lms.syntaxops._
+import rescala.lms.optimizations._
 
 trait ReactiveDSL extends Reactivity with ScalaOpsPkg with LiftScala
 

@@ -1,9 +1,9 @@
-package lms.react.dsl
+package rescala.lms.dsl
 
 import org.scalatest._
 import virtualization.lms.common.CompileScala
-import react.lms._
-import react._
+import rescala.lms._
+import rescala._
 
 class SignalsSpec extends WordSpec with Matchers {
   "A OptiREScala Signal" can {
@@ -15,7 +15,7 @@ class SignalsSpec extends WordSpec with Matchers {
       }
 
       val res = prog.compile(prog.f).apply( () )
-      res.getVal should equal(42)
+      res.get should equal(42)
     }
 
     "be asked for its value" in {
@@ -49,7 +49,7 @@ trait CreateSigProg extends ReactiveDSL {
 trait GetFromSigProg extends ReactiveDSL {
   def f(x:Rep[Unit]) = {
     val s = Signal(List()){x: Rep[Signal[String]] => "1337" }
-    s.getVal
+    s.get
   }
 }
 

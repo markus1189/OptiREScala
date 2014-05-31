@@ -1,7 +1,7 @@
-package react.lms.syntaxops
+package rescala.lms.syntaxops
 
 import scala.virtualization.lms.common.{ScalaGenBase}
 
 trait ScalaGenReactiveBase extends ScalaGenBase {
-  val rescalaPkg = "react."
+  val rescalaPkg = "rescala."
 }
