@@ -39,13 +39,26 @@ class SignalsSpec extends WordSpec with Matchers {
       val res = prog.compile(prog.f).apply( () )
       res should equal(3.141592)
     }
+
+    "be mapped" in {
+      val prog = new MapSignalProg with ReactiveDSLExp with CompileScala { self =>
+        override val codegen = new ReactiveDSLGen {
+          val IR: self.type = self
+        }
+      }
+
+      val res = prog.compile(prog.f).apply( () )
+      res.get should equal(42)
+    }
   }
 }
 
+// Create a Signal
 trait CreateSigProg extends ReactiveDSL {
   def f(x : Rep[Unit]) = Signal(List()){x: Rep[Signal[Int]] => 42}
 }
 
+// Create a Signal and call get on in
 trait GetFromSigProg extends ReactiveDSL {
   def f(x:Rep[Unit]) = {
     val s = Signal(List()){x: Rep[Signal[String]] => "1337" }
@@ -53,9 +66,23 @@ trait GetFromSigProg extends ReactiveDSL {
   }
 }
 
+// Create a Signal and call apply on it
 trait ApplySigProg extends ReactiveDSL {
   def f(x:Rep[Unit]) = {
     val s = Signal(List()){x: Rep[Signal[Double]] => 3.141592 }
     s()
+  }
+}
+
+// Map over a Signal
+trait MapSignalProg extends ReactiveDSL {
+  def f(x : Rep[Unit]) = {
+    val v = Var(39)
+    def inc(i: Rep[Int]): Rep[Int] = i + 1
+
+    Signal(List(v)) { s: Rep[Signal[Int]] => v() }.
+      map(inc).
+      map(inc).
+      map(inc)
   }
 }

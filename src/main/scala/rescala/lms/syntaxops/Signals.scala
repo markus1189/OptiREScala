@@ -24,11 +24,13 @@ trait SignalSyntax extends Base {
     def get: Rep[A] = sig_ops_get(sig)
     def apply(): Rep[A] = sig_ops_apply(sig)
     def apply(depSig: Rep[RESignalSynt[_]]): Rep[A] = sig_ops_apply_dep(sig,depSig)
+    def map[B:Manifest](f: Rep[A] => Rep[B]): Rep[RESignal[B]] = sig_ops_map(sig,f)
   }
 
   def sig_ops_get[A:Manifest](s: Rep[RESignal[A]]): Rep[A]
   def sig_ops_apply[A:Manifest](s: Rep[RESignal[A]]): Rep[A]
   def sig_ops_apply_dep[A:Manifest](sig: Rep[RESignal[A]], depSig: Rep[RESignalSynt[_]]): Rep[A]
+  def sig_ops_map[A:Manifest, B:Manifest](sig: Rep[RESignal[A]], f: Rep[A] => Rep[B]): Rep[RESignal[B]]
 }
 
 trait SignalOps extends BaseExp with FunctionsExp with EffectExp {
@@ -53,6 +55,15 @@ trait SignalOps extends BaseExp with FunctionsExp with EffectExp {
   override def sig_ops_apply_dep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignalSynt[_]]): Exp[A] =
     reflectMutable(SigApplyDep(sig,depSig))
   case class SigApplyDep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignalSynt[_]]) extends Def[A]
+
+  override def sig_ops_map[A:Manifest, B:Manifest](sig: Exp[RESignal[A]], f: Exp[A] => Exp[B]): Exp[RESignal[B]] =
+    MappedSignal(sig, doLambda(f))
+
+  case class MappedSignal[A:Manifest,B:Manifest](
+    sig: Exp[RESignal[A]],
+    f: Rep[A => B]
+  ) extends Def[RESignal[B]]
+
 }
 
 trait ScalaGenSignals extends ScalaGenReactiveBase with ScalaGenFunctions {
@@ -64,6 +75,7 @@ trait ScalaGenSignals extends ScalaGenReactiveBase with ScalaGenFunctions {
     case SigGetValue(s) => emitValDef(sym, quote(s) + ".get")
     case SigApply(s) => emitValDef(sym, quote(s) + "()")
     case SigApplyDep(s,dep) => emitValDef(sym, quote(s) + "(" + quote(dep) + ")")
+    case MappedSignal(s,f) => emitValDef(sym, quote(s) + ".map(" + quote(f) + ")" )
     case _ => super.emitNode(sym,node)
   }
 
