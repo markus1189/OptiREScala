@@ -8,7 +8,7 @@ import rescala.{Var => REVar,Signal => RESignal, SignalSynt => RESignalSynt}
 import scala.util.matching._
 
 class InferenceSepc extends WordSpec with Matchers {
-  "A OptiREScala Signal with inference" can {
+  "OptiREScala Signal with inference" can {
     "infer dependencies of vars" in {
       val prog = new VarInferenceProg with ReactiveDSLExp with CompileScala { self =>
         override val codegen = new ReactiveDSLGen {
@@ -21,11 +21,12 @@ class InferenceSepc extends WordSpec with Matchers {
       // Check the result value
       s.get should equal(1+2+3)
 
-      // Check result of code generation
+      // Check result of code generation: only two of the three deps
+      // should be inferred
       val out = new java.io.StringWriter();
       prog.codegen.emitSource(prog.f, "F", new java.io.PrintWriter(out))
-      val p = new Regex("val x(\\d+) = List\\(x(\\d+),x(\\d+)\\)")
-      out.toString should include regex p
+      val twoDepsRegex = new Regex("val x(\\d+) = List\\(x(\\d+),x(\\d+)\\)")
+      out.toString should include regex twoDepsRegex
     }
   }
 }
