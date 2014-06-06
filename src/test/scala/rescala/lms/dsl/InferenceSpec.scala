@@ -7,7 +7,7 @@ import rescala.{Var => REVar,Signal => RESignal, SignalSynt => RESignalSynt}
 
 import scala.util.matching._
 
-class InferenceSepc extends WordSpec with Matchers {
+class InferenceSpec extends WordSpec with Matchers {
   "OptiREScala Signal with inference" can {
     "infer dependencies of vars" in {
       val prog = new VarInferenceProg with ReactiveDSLExp with CompileScala { self =>
