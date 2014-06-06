@@ -16,23 +16,23 @@ trait Reactivity
     extends VarSyntax
     with SignalSyntax
     with SignalInferenceSyntax
-    with TupleOps
+    with MapFusionSyntax
 
 trait ReactivityExp
     extends Reactivity
     with VarOps
     with SignalOps
     with SignalInferenceOps
+    with MapFusionOps
     with ListOpsExp
     with SeqOpsExp
     with EffectExp
-    with TupleOpsExp
 
 trait ScalaGenReactivity extends ScalaGenReactiveBase
     with ScalaGenEffect
     with ScalaGenVars
     with ScalaGenSignals
-    with ScalaGenTupleOps {
+    with ScalaGenMapFusion {
   val IR: ReactivityExp
   import IR._
 }
