@@ -77,10 +77,11 @@ trait ApplySigProg extends ReactiveDSL {
 // Map over a Signal
 trait MapSignalProg extends ReactiveDSL {
   def f(x : Rep[Unit]) = {
-    val v = Var(39)
+    val v1 = Var(10)
+    val v2 = Var(29)
     def inc(i: Rep[Int]): Rep[Int] = i + 1
 
-    Signal(List(v)) { s: Rep[Signal[Int]] => v() }.
+    Signal(List(v1,v2)) { s: Rep[Signal[Int]] => v1() + v2() }.
       map(inc).
       map(inc).
       map(inc)
