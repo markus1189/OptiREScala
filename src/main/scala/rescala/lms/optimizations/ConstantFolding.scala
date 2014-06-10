@@ -10,27 +10,26 @@ trait ConstantFolding extends EffectExp {
   // Workhorse of constant folding, if this is true we can inline
   private def onlyConstants: Seq[Exp[DepHolder]] => Boolean = {
 
-    // We are only interested in Sym
+    // 1) we are only interested in Sym
     def filterForSyms[A]: Seq[Exp[A]] => Seq[Sym[A]] =
       _.foldLeft(Seq[Sym[A]]()) {
         case (acc,x@Sym(_)) => acc :+ x
         case (acc,_) => acc
       }
 
-    // Find the definitions for the Sym
+    // 2) find the definitions for the Sym
     def retrieveDefinition[A]: Seq[Sym[A]] => Seq[Def[Any]] =
       _.map(findDefinition(_)).flatMap {
         case Some(TP(_,rhs)) => Some(rhs)
         case _ => None
       }
 
-    // Check if it is a constant
+    // 3) check if it is a constant
     def allAreConstant: Seq[Def[Any]] => Boolean = _.forall {
       case ConstantCreation(_) => true
       case _ => false
     }
 
-    // Compose the helpers above into a single function
     allAreConstant compose retrieveDefinition compose filterForSyms
   }
 
