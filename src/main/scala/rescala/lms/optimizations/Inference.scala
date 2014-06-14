@@ -31,7 +31,7 @@ trait SignalInferenceOps
     sig_ops_newSignal(inferredDeps, f)
   }
 
-  def inferDependencies[A:Manifest](f: Exp[SignalSynt[A]] => Exp[A]): Exp[List[DepHolder]] = {
+  def inferDependencies[A:Manifest](f: Exp[SignalSynt[A]] => Exp[A]): List[Exp[DepHolder]] = {
     val effects = effectSyms(lambdaToBlock1(f))
     val nestedSyms = aliasSyms(f).map(findDefinition(_)).map(effectSyms(_)).flatten
     val onlySyms = (effects ++ nestedSyms).filter { case Sym(x) => true; case _ => false }
@@ -40,6 +40,6 @@ trait SignalInferenceOps
       case Some(TP(_,Reflect(SigApplyDep(x,_),_,_))) => x
     }
 
-    list_new(defs)
+    defs
   }
 }

@@ -31,7 +31,7 @@ class MapFusionSpec extends WordSpec with Matchers {
 
 trait MapFusionProg extends ReactiveDSL {
   def f(x : Rep[Unit]) = {
-    val v: Rep[RESignal[Int]] = Signal(List()) { s: Rep[RESignalSynt[Int]] => 1}
+    val v: Rep[RESignal[Int]] = Signal() { s: Rep[RESignalSynt[Int]] => 1}
     v.fuseMap(_+1).fuseMap(_+2).fuseMap(_+3)
   }
 }

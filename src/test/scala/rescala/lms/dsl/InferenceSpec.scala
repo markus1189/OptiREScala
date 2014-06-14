@@ -25,7 +25,7 @@ class InferenceSpec extends WordSpec with Matchers {
       // should be inferred
       val out = new java.io.StringWriter();
       prog.codegen.emitSource(prog.f, "F", new java.io.PrintWriter(out))
-      val twoDepsRegex = new Regex("val x(\\d+) = List\\(x(\\d+),x(\\d+)\\)")
+      val twoDepsRegex = new Regex("SignalSynt\\[Int\\]\\(List\\(x(\\d+),x(\\d+)\\)\\)")
       out.toString should include regex twoDepsRegex
     }
   }

@@ -55,13 +55,13 @@ class SignalsSpec extends WordSpec with Matchers {
 
 // Create a Signal
 trait CreateSigProg extends ReactiveDSL {
-  def f(x : Rep[Unit]) = Signal(List()){x: Rep[Signal[Int]] => 42}
+  def f(x : Rep[Unit]) = Signal(){x: Rep[Signal[Int]] => 42}
 }
 
 // Create a Signal and call get on in
 trait GetFromSigProg extends ReactiveDSL {
   def f(x:Rep[Unit]) = {
-    val s = Signal(List()){x: Rep[Signal[String]] => "1337" }
+    val s = Signal(){x: Rep[Signal[String]] => "1337" }
     s.get
   }
 }
@@ -69,7 +69,7 @@ trait GetFromSigProg extends ReactiveDSL {
 // Create a Signal and call apply on it
 trait ApplySigProg extends ReactiveDSL {
   def f(x:Rep[Unit]) = {
-    val s = Signal(List()){x: Rep[Signal[Double]] => 3.141592 }
+    val s = Signal(){x: Rep[Signal[Double]] => 3.141592 }
     s()
   }
 }
@@ -81,7 +81,7 @@ trait MapSignalProg extends ReactiveDSL {
     val v2 = Var(29)
     def inc(i: Rep[Int]): Rep[Int] = i + 1
 
-    Signal(List(v1,v2)) { s: Rep[Signal[Int]] => v1() + v2() }.
+    Signal(v1,v2) { s: Rep[Signal[Int]] => v1() + v2() }.
       map(inc).
       map(inc).
       map(inc)

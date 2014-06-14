@@ -4,8 +4,7 @@ import scala.virtualization.lms.common.{Base, EffectExp, ScalaGenEffect}
 import rescala.lms.syntaxops._
 import rescala.{DepHolder, Signal => RESignal}
 
-trait ConstantFolding extends EffectExp {
-  self: SignalOps =>
+trait ConstantFolding extends EffectExp with SignalOps with SignalSyntax {
 
   // Workhorse of constant folding, if this is true we can inline
   private def onlyConstants: Seq[Exp[DepHolder]] => Boolean = {
@@ -33,38 +32,45 @@ trait ConstantFolding extends EffectExp {
     allAreConstant compose retrieveDefinition compose filterForSyms
   }
 
-  // override def new_behavior[A:Manifest](
-  //   dhs: Seq[Exp[DepHolder]], f: => Exp[A]): Exp[RESignal[A]] = {
+ override def sig_ops_newStaticSignal[A:Manifest](
+    dhs: Seq[Exp[DepHolder]], f: => Exp[A]): Exp[RESignal[A]] = {
 
-  //   if (dhs.isEmpty || onlyConstants(dhs)) {
-  //     ConstantCreation(reifyEffects(f))
-  //   } else {
-  //     SignalCreation(dhs, reifyEffects(f))
-  //   }
-  // }
+    if (dhs.isEmpty || onlyConstants(dhs)) {
+      ConstantCreation(reifyEffects(f))
+    } else {
+      StaticSignalCreation(dhs, reifyEffects(f))
+    }
+  }
 
   case class ConstantCreation[A:Manifest](body: Block[A]) extends Def[RESignal[A]]
   case class ConstantAccess[A:Manifest](body: Block[A]) extends Def[A]
 
-  // override def dep_holder_access[A:Manifest](dh: Exp[AccessableDepHolder[A]]): Exp[A] = dh match {
-  //   case Def(ConstantCreation(x)) => ConstantAccess(x)
-  //   case _ => super.dep_holder_access(dh)
-  // }
+  override def sig_ops_get[A:Manifest](s: Exp[RESignal[A]]): Exp[A] = s match {
+    case Def(ConstantCreation(bdy)) => ConstantAccess(bdy)
+    case _ => super.sig_ops_get(s)
+  }
 
+  override def sig_ops_apply[A:Manifest](s: Exp[RESignal[A]]): Exp[A] = s match {
+    case Def(ConstantCreation(bdy)) => ConstantAccess(bdy)
+    case _ => super.sig_ops_apply(s)
+  }
+
+  // TODO
+  // override def sig_ops_apply_dep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignalSynt[_]]): Exp[A]
 }
 
-// trait ScalaGenConstantFolding extends ScalaGenReactiveBase with ScalaGenEffect {
-//   val IR: ConstantFolding
-//   import IR._
+trait ScalaGenConstantFolding extends ScalaGenReactiveBase with ScalaGenEffect {
+  val IR: ConstantFolding
+  import IR._
 
-//   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit =  node match {
-//     case ConstantAccess(f) => emitValDef(sym, quote(getBlockResult(f)))
-//     /* Unfold the stored block inside of a Constant expression */
-//     case ConstantCreation(f) => emitValDef(sym,
-//       simpleReactivePkg + "Constant {")
-//         emitBlock(f)
-//         stream.println(quote(getBlockResult(f)) + "\n")
-//       stream.println("}")
-//     case _ => super.emitNode(sym,node)
-//   }
-// }
+  override def emitNode(sym: Sym[Any], node: Def[Any]): Unit =  node match {
+    // case ConstantAccess(f) => emitValDef(sym, quote(getBlockResult(f)))
+    /* Unfold the stored block inside of a Constant expression */
+    case ConstantCreation(f) => emitValDef(sym,
+      rescalaPkg + "Constant {")
+        emitBlock(f)
+        stream.println(quote(getBlockResult(f)) + "\n")
+      stream.println("}")
+    case _ => super.emitNode(sym,node)
+  }
+}

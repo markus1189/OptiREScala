@@ -9,23 +9,23 @@ import scala.virtualization.lms.common.{Base, BaseExp, FunctionsExp, ScalaGenFun
 trait SignalSyntax extends Base {
   object Signal {
     def apply[A:Manifest](
-      deps: Rep[List[DepHolder]]
+      deps: Rep[DepHolder]*
     )(
       expr: Rep[RESignalSynt[A]] => Rep[A]
     ) = sig_ops_newSignal(deps, expr)
   }
 
-  def sig_ops_newSignal[A:Manifest](deps: Rep[List[DepHolder]],
+  def sig_ops_newSignal[A:Manifest](deps: Seq[Rep[DepHolder]],
     expr: Rep[RESignalSynt[A]] => Rep[A]): Rep[RESignalSynt[A]]
 
   object StaticSignal {
-    def apply[A:Manifest](deps: Rep[List[DepHolder]])(expr: => Rep[A]) =
+    def apply[A:Manifest](deps: Rep[DepHolder]*)(expr: => Rep[A]) =
       sig_ops_newStaticSignal(deps, expr)
   }
 
   def sig_ops_newStaticSignal[A:Manifest](
-    deps: Rep[List[DepHolder]],
-    expr: Rep[A]): Rep[RESignal[A]]
+    deps: Seq[Rep[DepHolder]],
+    expr: => Rep[A]): Rep[RESignal[A]]
 
   implicit def toSignalOps[A:Manifest](s: Rep[RESignal[A]]) = SignalOps(s)
 
@@ -45,20 +45,20 @@ trait SignalSyntax extends Base {
 trait SignalOps extends BaseExp with FunctionsExp with EffectExp {
   this: SignalSyntax =>
 
-  override def sig_ops_newSignal[A:Manifest](deps: Exp[List[DepHolder]],
+  override def sig_ops_newSignal[A:Manifest](deps: Seq[Exp[DepHolder]],
     expr: Exp[RESignalSynt[A]] => Exp[A]): Exp[RESignalSynt[A]] = SignalCreation(deps,fun(expr))
 
-  case class SignalCreation[A:Manifest](deps: Exp[List[DepHolder]],
+  case class SignalCreation[A:Manifest](deps: Seq[Exp[DepHolder]],
     expr: Exp[RESignalSynt[A] => A]) extends Def[RESignalSynt[A]] {
     val t = manifest[A]
   }
 
   override def sig_ops_newStaticSignal[A:Manifest](
-    deps: Exp[List[DepHolder]],
-    expr: Exp[A]): Exp[RESignal[A]] = StaticSignalCreation(deps, reifyEffects(expr))
+    deps: Seq[Exp[DepHolder]],
+    expr: => Exp[A]): Exp[RESignal[A]] = StaticSignalCreation(deps, reifyEffects(expr))
 
   case class StaticSignalCreation[A:Manifest](
-    deps: Exp[List[DepHolder]],
+    deps: Seq[Exp[DepHolder]],
     expr: Block[A]) extends Def[RESignal[A]]
 
   override def sig_ops_get[A:Manifest](s: Exp[RESignal[A]]): Exp[A] =
@@ -93,7 +93,7 @@ trait ScalaGenSignals extends ScalaGenReactiveBase with ScalaGenFunctions {
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
     case StaticSignalCreation(deps,expr) => emitValDef(sym,
-      "StaticSignal(" + quote(deps) + ") {")
+      rescalaPkg + "StaticSignal(List(" + deps.map(quote).mkString(",") + ")) {")
       emitBlock(expr)
       stream.println(quote(getBlockResult(expr)) + "\n")
       stream.println("}")
@@ -109,7 +109,7 @@ trait ScalaGenSignals extends ScalaGenReactiveBase with ScalaGenFunctions {
     val SignalCreation(deps,expr) = sigNode
 
     val className = "SignalSynt[" + sigNode.t + "]" // use manifest for type ascription
-    val quotedDeps = "(" + quote(deps) + ")"
+    val quotedDeps = "(List(" + deps.map(quote).mkString(",") + "))"
     val quotedExpr = "{" + quote(expr) + "}"
 
     emitValDef(sym, rescalaPkg + className + quotedDeps + quotedExpr )
