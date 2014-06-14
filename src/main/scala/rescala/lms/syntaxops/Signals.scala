@@ -83,6 +83,7 @@ trait SignalOps extends BaseExp with FunctionsExp with EffectExp {
 
   override def boundSyms(e: Any): List[Sym[Any]] = e match {
     case SignalCreation(dhs,body) => effectSyms(body)
+    case StaticSignalCreation(dhs,body) => effectSyms(body)
     case _ => super.boundSyms(e)
   }
 }
