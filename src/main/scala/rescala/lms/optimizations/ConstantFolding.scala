@@ -64,12 +64,11 @@ trait ScalaGenConstantFolding extends ScalaGenReactiveBase with ScalaGenEffect {
   import IR._
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit =  node match {
-    // case ConstantAccess(f) => emitValDef(sym, quote(getBlockResult(f)))
-    /* Unfold the stored block inside of a Constant expression */
+    case ConstantAccess(f) => emitValDef(sym, quote(getBlockResult(f)))
     case ConstantCreation(f) => emitValDef(sym,
-      rescalaPkg + "Constant {")
+      rescalaPkg + "Constant{ // tag:constant-creation")
         emitBlock(f)
-        stream.println(quote(getBlockResult(f)) + "\n")
+        stream.println(quote(getBlockResult(f)))
       stream.println("}")
     case _ => super.emitNode(sym,node)
   }
