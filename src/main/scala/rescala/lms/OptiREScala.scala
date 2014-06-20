@@ -3,6 +3,7 @@ package rescala.lms
 import scala.virtualization.lms.common._
 import rescala.lms.syntaxops._
 import rescala.lms.optimizations._
+import rescala.lms.auxiliary._
 
 trait ReactiveDSL extends Reactivity with ScalaOpsPkg with LiftScala
 
@@ -17,6 +18,10 @@ trait Reactivity
     with SignalSyntax
     with SignalInferenceSyntax
     with MapFusionSyntax
+    with FibonacciSyntax
+    with LMSSyntax  // Include some syntax from LMS
+
+trait LMSSyntax extends Functions
 
 trait ReactivityExp
     extends Reactivity
@@ -24,15 +29,28 @@ trait ReactivityExp
     with SignalOps
     with SignalInferenceOps
     with MapFusionOps
-    with ListOpsExp
+    with FibonacciOps
+    with LMSProvided  // Include many traits provided my LMS
+
+trait LMSProvided
+    extends ListOpsExp
     with SeqOpsExp
     with EffectExp
+    with OrderingOpsExp
+    with NumericOpsExp
+    with IfThenElseExp
+    with PrimitiveOpsExp
 
 trait ScalaGenReactivity extends ScalaGenReactiveBase
-    with ScalaGenEffect
     with ScalaGenVars
     with ScalaGenSignals
-    with ScalaGenMapFusion {
+    with ScalaGenMapFusion
+    with ScalaGenFibonacci
+    with LMSProvidedGen /* Include code generators at least for LMSProvided traits*/{
   val IR: ReactivityExp
   import IR._
 }
+
+trait LMSProvidedGen
+    extends ScalaGenEffect
+    with ScalaGenIfThenElse
