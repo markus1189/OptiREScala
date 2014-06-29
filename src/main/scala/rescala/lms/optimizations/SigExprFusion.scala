@@ -23,8 +23,8 @@ trait SigExprFusionOps extends SigExprFusionSyntax {
 
   override def sig_expr_fusion_newSignal[A:Manifest](deps: Seq[Rep[DepHolder]],
     expr: Rep[RESignalSynt[A]] => Rep[A]): Rep[RESignalSynt[A]] = deps match {
-    case Seq() => ???
-    case Seq(d) => ???
+    case Seq() => ??? /** TODO: no dependencies, simple subst? */
+    case Seq(d) => ??? /** TODO: one dependency, try to inline? */
     case _ => sig_ops_newSignal(deps,expr)
   }
 }
