@@ -42,10 +42,10 @@ trait FibonacciLMSProg extends ReactiveDSL {
       root(s) + fib(fibBaseVal)
     }
 
-    val s2: Rep[RESignal[Long]] = s1.fuseMap { x => x + fib(fibBaseVal) }
-    val s3: Rep[RESignal[Long]] = s2.fuseMap { x => x + fib(fibBaseVal) }
-    val s4: Rep[RESignal[Long]] = s3.fuseMap { x => x + fib(fibBaseVal) }
-    val s5: Rep[RESignal[Long]] = s4.fuseMap { x => x + fib(fibBaseVal) }
+    val s2 = s1.fuseMap { x => x + fib(fibBaseVal) }
+    val s3 = s2.fuseMap { x => x + fib(fibBaseVal) }
+    val s4 = s3.fuseMap { x => x + fib(fibBaseVal) }
+    val s5 = s4.fuseMap { x => x + fib(fibBaseVal) }
 
     println(s5.get)
 
