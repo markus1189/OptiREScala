@@ -1,6 +1,7 @@
 package rescala.lms.syntaxops
 
 import scala.language.implicitConversions
+import scala.reflect.SourceContext
 
 // avoid name clashes with object factory methods
 import rescala.{DepHolder, SignalSynt => RESignalSynt, Signal => RESignal}
@@ -42,8 +43,8 @@ trait SignalSyntax extends Base {
   def sig_ops_map[A:Manifest, B:Manifest](sig: Rep[RESignal[A]], f: Rep[A] => Rep[B]): Rep[RESignal[B]]
 }
 
-trait SignalOps extends BaseExp with FunctionsExp with EffectExp {
-  this: SignalSyntax =>
+trait SignalOps extends FunctionsExp with EffectExp {
+  this: SignalSyntax with BaseExp =>
 
   override def sig_ops_newSignal[A:Manifest](deps: Seq[Exp[DepHolder]],
     expr: Exp[RESignalSynt[A]] => Exp[A]): Exp[RESignalSynt[A]] = SignalCreation(deps,fun(expr))
@@ -86,6 +87,15 @@ trait SignalOps extends BaseExp with FunctionsExp with EffectExp {
     case StaticSignalCreation(dhs,body) => effectSyms(body)
     case _ => super.boundSyms(e)
   }
+
+  override def mirror[A:Manifest](
+    e: Def[A],
+    f: Transformer)(implicit pos: SourceContext): Exp[A] = (e match {
+      case SigApplyDep(a,b) => sig_ops_apply_dep(f(a),f(b))
+      case Reflect(SigApplyDep(a,b), u, es) =>
+        reflectMirrored(Reflect(SigApplyDep(f(a),f(b)), mapOver(f,u), f(es)))(mtype(manifest[A]))
+      case _ => super.mirror(e, f)
+  }).asInstanceOf[Exp[A]]
 }
 
 trait ScalaGenSignals extends ScalaGenReactiveBase with ScalaGenFunctions {

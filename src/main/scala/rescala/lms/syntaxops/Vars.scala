@@ -4,7 +4,8 @@ import rescala.{Var => REVar,Signal => RESignal}
 
 import scala.language.implicitConversions
 
-import scala.virtualization.lms.common.{Base, EffectExp}
+import scala.virtualization.lms.common.{Base, EffectExp, BaseExp}
+import scala.reflect.SourceContext
 
 /** Define the available operations for the DSL users */
 trait VarSyntax extends Base {
@@ -35,7 +36,7 @@ trait VarSyntax extends Base {
     DSL 'nodes' that will later be used in the corresponding ScalaGen-
     trait*/
 trait VarOps extends EffectExp {
-  this: VarSyntax =>
+  this: VarSyntax with BaseExp =>
 
   override def var_ops_newVar[A:Manifest](v: Exp[A]): Exp[REVar[A]] = VarCreation(v)
   case class VarCreation[A:Manifest](
@@ -48,6 +49,13 @@ trait VarOps extends EffectExp {
   override def var_ops_update[A:Manifest](v: Exp[REVar[A]], x: Exp[A]): Exp[Unit] = UpdateValue(v,x)
   case class UpdateValue[A:Manifest](
     varToUpdate: Exp[REVar[A]], newValue: Exp[A]) extends Def[Unit]
+
+  override def mirror[A:Manifest](
+    e: Def[A],
+    f: Transformer)(implicit pos: SourceContext): Exp[A] = (e match {
+      case VarCreation(x) => var_ops_newVar(f(x))
+      case _ => super.mirror(e, f)
+  }).asInstanceOf[Exp[A]]
 }
 
 trait ScalaGenVars extends ScalaGenReactiveBase {
