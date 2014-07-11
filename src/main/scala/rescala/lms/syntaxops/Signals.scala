@@ -58,11 +58,9 @@ trait SignalOps extends FunctionsExp with EffectExp {
     deps: Seq[Exp[DepHolder]],
     expr: => Exp[A]): Exp[RESignal[A]] = StaticSignalCreation(deps, reifyEffects(expr))
 
-  case class StaticSignalCreation[A:Manifest](
+  case class StaticSignalCreation[A](
     deps: Seq[Exp[DepHolder]],
-    expr: Block[A]) extends Def[RESignal[A]] {
-    val t = manifest[A]
-  }
+    expr: Block[A])(implicit val t: Manifest[A]) extends Def[RESignal[A]]
 
   override def sig_ops_get[A:Manifest](s: Exp[RESignal[A]]): Exp[A] =
     reflectMutable(SigGetValue(s))
@@ -70,13 +68,13 @@ trait SignalOps extends FunctionsExp with EffectExp {
     val t = manifest[A]
   }
 
-  override def sig_ops_apply[A:Manifest](s: Exp[RESignal[A]]): Exp[A] =
+  override def sig_ops_apply[A](s: Exp[RESignal[A]])(implicit m: Manifest[A]): Exp[A] =
     reflectMutable(SigApply(s))
   case class SigApply[A:Manifest](s: Exp[RESignal[A]]) extends Def[A] {
     val t = manifest[A]
   }
 
-  override def sig_ops_apply_dep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignalSynt[_]]): Exp[A] =
+  override def sig_ops_apply_dep[A](sig: Exp[RESignal[A]], depSig: Exp[RESignalSynt[_]])(implicit m: Manifest[A]): Exp[A] =
     reflectMutable(SigApplyDep(sig,depSig))
   case class SigApplyDep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignalSynt[_]]) extends Def[A] {
     val t = manifest[A]
@@ -104,7 +102,7 @@ trait SignalOps extends FunctionsExp with EffectExp {
       case SigApplyDep(a,b) => sig_ops_apply_dep(f(a),f(b))
       case Reflect(SigApplyDep(a,b), u, es) =>
         reflectMirrored(Reflect(SigApplyDep(f(a),f(b)), mapOver(f,u), f(es)))(mtype(manifest[A]))
-      case SignalCreation(ds,l@Def(Lambda(func,arg,res))) => toAtom(SignalCreation(f(ds),f(l)))
+      case a@SignalCreation(ds,l@Def(Lambda(func,arg,res))) => toAtom(SignalCreation(f(ds),f(l))(a.t))
       case _ => super.mirror(e, f)
   }).asInstanceOf[Exp[A]]
 }

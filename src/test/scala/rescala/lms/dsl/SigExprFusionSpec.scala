@@ -33,8 +33,8 @@ class SigExprFusionSpec extends WordSpec with Matchers {
         override def transformStm(stm: Stm) = {
           // System.out.println(stm)
           stm match {
-            case TP(s,Reflect(SigApplyDep(s1,s2),t,u)) =>   // x1(x2) --> x1()
-              sig_ops_apply(s1)
+            case TP(s,Reflect(a@SigApplyDep(s1,s2),t,u)) =>   // x1(x2) --> x1()
+              sig_ops_apply(s1)(a.t)
           case _ => super.transformStm(stm)
         }}
       }
