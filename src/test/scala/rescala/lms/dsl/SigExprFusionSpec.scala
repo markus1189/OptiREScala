@@ -6,6 +6,7 @@ import rescala.lms._
 import rescala.{Var => REVar,Signal => RESignal, SignalSynt => RESignalSynt}
 import java.io.{PrintWriter}
 import scala.collection._
+import rescala.lms.optimizations.FusionTransformers
 
 import scala.util.matching._
 
@@ -18,34 +19,9 @@ class SigExprFusionSpec extends WordSpec with Matchers {
         }
       }
 
-      val blk = prog.reifyEffects(prog.f(prog.fresh[Unit]))
-      val codegen = prog.codegen
+      val trans = FusionTransformers.sigApplyDepTransformer(prog)
 
-      codegen.withStream(new PrintWriter(System.out)) {
-        codegen.emitBlock(blk)
-      }
-
-      System.out.println("-" * 80)
-
-      val trans = new ForwardTransformer {
-        val IR: prog.type = prog
-        import IR._
-        override def transformStm(stm: Stm) = {
-          // System.out.println(stm)
-          stm match {
-            case TP(s,Reflect(a@SigApplyDep(s1,s2),t,u)) =>   // x1(x2) --> x1()
-              sig_ops_apply(s1)(a.t)
-          case _ => super.transformStm(stm)
-        }}
-      }
-
-      val transformed = trans.transformBlock(blk)
-
-      codegen.withStream(new PrintWriter(System.out)) {
-        codegen.emitBlock(transformed)
-      }
-
-      val result = prog.compile({_: trans.IR.Rep[Unit] => trans.reflectBlock(transformed)}).apply( () )
+      val result = prog.compile({_: trans.IR.Rep[Unit] => trans.reflectBlock(trans.transformBlock(prog.reifyEffects(prog.f(prog.fresh[Unit]))))}).apply( () )
 
       result.get should equal(43)
     }
