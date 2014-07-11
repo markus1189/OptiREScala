@@ -44,6 +44,10 @@ class SigExprFusionSpec extends WordSpec with Matchers {
       codegen.withStream(new PrintWriter(System.out)) {
         codegen.emitBlock(transformed)
       }
+
+      val result = prog.compile({_: trans.IR.Rep[Unit] => trans.reflectBlock(transformed)}).apply( () )
+
+      result.get should equal(43)
     }
   }
 }
