@@ -40,15 +40,21 @@ trait VarOps extends EffectExp {
 
   override def var_ops_newVar[A:Manifest](v: Exp[A]): Exp[REVar[A]] = VarCreation(v)
   case class VarCreation[A:Manifest](
-    value: Exp[A]) extends Def[REVar[A]]
+    value: Exp[A]) extends Def[REVar[A]] {
+    val t = manifest[A]
+  }
 
   override def var_ops_set[A:Manifest](v: Exp[REVar[A]], x: Exp[A]): Exp[Unit] = reflectEffect(SetValue(v,x))
   case class SetValue[A:Manifest](
-    varToSet: Exp[REVar[A]], newValue: Exp[A]) extends Def[Unit]
+    varToSet: Exp[REVar[A]], newValue: Exp[A]) extends Def[Unit] {
+    val t = manifest[A]
+  }
 
   override def var_ops_update[A:Manifest](v: Exp[REVar[A]], x: Exp[A]): Exp[Unit] = UpdateValue(v,x)
   case class UpdateValue[A:Manifest](
-    varToUpdate: Exp[REVar[A]], newValue: Exp[A]) extends Def[Unit]
+    varToUpdate: Exp[REVar[A]], newValue: Exp[A]) extends Def[Unit] {
+    val t = manifest[A]
+  }
 
   override def mirror[A:Manifest](
     e: Def[A],
@@ -63,7 +69,7 @@ trait ScalaGenVars extends ScalaGenReactiveBase {
   import IR._
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
-    case VarCreation(v) => emitValDef(sym, rescalaPkg + "VarSynt(" + quote(v) + ")")
+    case n@VarCreation(v) => emitValDef(sym, rescalaPkg + "VarSynt[" + n.t + "](" + quote(v) + ")")
     case SetValue(v,x) => emitValDef(sym, quote(v) + ".set(" + quote(x) + ")")
     case UpdateValue(v,x) => emitValDef(sym, quote(v) + ".update(" + quote(x) + ")")
     case _ => super.emitNode(sym,node)

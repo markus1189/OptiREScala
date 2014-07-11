@@ -60,19 +60,27 @@ trait SignalOps extends FunctionsExp with EffectExp {
 
   case class StaticSignalCreation[A:Manifest](
     deps: Seq[Exp[DepHolder]],
-    expr: Block[A]) extends Def[RESignal[A]]
+    expr: Block[A]) extends Def[RESignal[A]] {
+    val t = manifest[A]
+  }
 
   override def sig_ops_get[A:Manifest](s: Exp[RESignal[A]]): Exp[A] =
     reflectMutable(SigGetValue(s))
-  case class SigGetValue[A:Manifest](s: Exp[RESignal[A]]) extends Def[A]
+  case class SigGetValue[A:Manifest](s: Exp[RESignal[A]]) extends Def[A] {
+    val t = manifest[A]
+  }
 
   override def sig_ops_apply[A:Manifest](s: Exp[RESignal[A]]): Exp[A] =
     reflectMutable(SigApply(s))
-  case class SigApply[A:Manifest](s: Exp[RESignal[A]]) extends Def[A]
+  case class SigApply[A:Manifest](s: Exp[RESignal[A]]) extends Def[A] {
+    val t = manifest[A]
+  }
 
   override def sig_ops_apply_dep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignalSynt[_]]): Exp[A] =
     reflectMutable(SigApplyDep(sig,depSig))
-  case class SigApplyDep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignalSynt[_]]) extends Def[A]
+  case class SigApplyDep[A:Manifest](sig: Exp[RESignal[A]], depSig: Exp[RESignalSynt[_]]) extends Def[A] {
+    val t = manifest[A]
+  }
 
   override def sig_ops_map[A:Manifest, B:Manifest](sig: Exp[RESignal[A]], f: Exp[A] => Exp[B]): Exp[RESignal[B]] =
     MappedSignal(sig, doLambda(f))
@@ -80,7 +88,9 @@ trait SignalOps extends FunctionsExp with EffectExp {
   case class MappedSignal[A:Manifest,B:Manifest](
     sig: Exp[RESignal[A]],
     f: Rep[A => B]
-  ) extends Def[RESignal[B]]
+  ) extends Def[RESignal[B]] {
+    val t = (manifest[A],manifest[B])
+  }
 
   override def boundSyms(e: Any): List[Sym[Any]] = e match {
     case SignalCreation(dhs,body) => effectSyms(body)
@@ -111,7 +121,8 @@ trait ScalaGenSignals extends ScalaGenReactiveBase with ScalaGenFunctions {
       stream.println("}")
     case s@SignalCreation(deps,expr) => emitSignalCreation(s,sym)
     case SigGetValue(s) => emitValDef(sym, quote(s) + ".get")
-    case SigApply(s) => emitValDef(sym, quote(s) + "()")
+    case SigApply(s) =>
+      emitValDef(sym, quote(s) + "()")
     case SigApplyDep(s,dep) => emitValDef(sym, quote(s) + "(" + quote(dep) + ")")
     case MappedSignal(s,f) => emitValDef(sym, quote(s) + ".map(" + quote(f) + ")" )
     case _ => super.emitNode(sym,node)
