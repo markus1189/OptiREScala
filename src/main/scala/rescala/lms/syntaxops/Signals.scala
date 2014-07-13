@@ -47,10 +47,22 @@ trait SignalOps extends FunctionsExp with EffectExp {
   this: SignalSyntax with BaseExp =>
 
   override def sig_ops_newSignal[A:Manifest](deps: Seq[Exp[DepHolder]],
-    expr: Exp[RESignalSynt[A]] => Exp[A]): Exp[RESignalSynt[A]] = SignalCreation(deps,fun(expr))
+    expr: Exp[RESignalSynt[A]] => Exp[A]): Exp[RESignalSynt[A]] = deps match {
+    case Seq(d) if d.isInstanceOf[Exp[RESignal[A]]] => SingleDepSignalCreation(d.asInstanceOf[Exp[RESignal[A]]], expr)
+    case _ => SignalCreation(deps,fun(expr))
+  }
 
   case class SignalCreation[A:Manifest](deps: Seq[Exp[DepHolder]],
     expr: Exp[RESignalSynt[A] => A]) extends Def[RESignalSynt[A]] {
+    val t = manifest[A]
+  }
+
+  // Used for transforming signal expressions that depend only on one
+  // Signal into map calls for fusion
+  case class SingleDepSignalCreation[A:Manifest](
+    dep: Exp[RESignal[A]],
+    expr: Exp[RESignalSynt[A] => A]
+  ) extends Def[RESignalSynt[A]] {
     val t = manifest[A]
   }
 
@@ -105,6 +117,7 @@ trait SignalOps extends FunctionsExp with EffectExp {
       case Reflect(SigApply(a), u, es) =>
         reflectMirrored(Reflect(SigApply(f(a)), mapOver(f,u), f(es)))(mtype(manifest[A]))
       case a@SignalCreation(ds,l@Def(Lambda(func,arg,res))) => toAtom(SignalCreation(f(ds),f(l))(a.t))
+      case a@SingleDepSignalCreation(d,l@Def(Lambda(func,arg,res))) => toAtom(SingleDepSignalCreation(f(d),f(l))(a.t))
       case _ => super.mirror(e, f)
   }).asInstanceOf[Exp[A]]
 }
@@ -120,6 +133,11 @@ trait ScalaGenSignals extends ScalaGenReactiveBase with ScalaGenFunctions {
       stream.println(quote(getBlockResult(expr)) + "\n")
       stream.println("}")
     case s@SignalCreation(deps,expr) => emitSignalCreation(s,sym)
+    case s@SingleDepSignalCreation(dep,expr) =>
+      val str = "SignalSynt[" + s.t + "]" +
+              "(List(" + quote(dep) + "))" +
+             "{" + quote(expr) + "}"
+      emitValDef(sym, rescalaPkg + str)
     case SigGetValue(s) => emitValDef(sym, quote(s) + ".get")
     case SigApply(s) =>
       emitValDef(sym, quote(s) + "()")
