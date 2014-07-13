@@ -7,6 +7,8 @@ import scala.reflect.SourceContext
 import rescala.{DepHolder, SignalSynt => RESignalSynt, Signal => RESignal}
 import scala.virtualization.lms.common.{Base, BaseExp, FunctionsExp, ScalaGenFunctions, EffectExp}
 
+
+
 trait SignalSyntax extends Base {
   object Signal {
     def apply[A:Manifest](
@@ -44,11 +46,14 @@ trait SignalSyntax extends Base {
 }
 
 trait SignalOps extends FunctionsExp with EffectExp {
-  this: SignalSyntax with BaseExp =>
+  this: SignalSyntax with BaseExp with VarOps =>
 
   override def sig_ops_newSignal[A:Manifest](deps: Seq[Exp[DepHolder]],
     expr: Exp[RESignalSynt[A]] => Exp[A]): Exp[RESignalSynt[A]] = deps match {
-    case Seq(d) if d.isInstanceOf[Exp[RESignal[A]]] => SingleDepSignalCreation(d.asInstanceOf[Exp[RESignal[A]]], expr)
+    case Seq(Def(SignalCreation(ds2,expr2))) =>
+      val Seq(Def(sig)) = deps
+      val newSig = SignalCreation(ds2,expr2)
+      SingleDepSignalCreation(newSig,expr,newSig.t)
     case _ => SignalCreation(deps,fun(expr))
   }
 
@@ -59,11 +64,12 @@ trait SignalOps extends FunctionsExp with EffectExp {
 
   // Used for transforming signal expressions that depend only on one
   // Signal into map calls for fusion
-  case class SingleDepSignalCreation[A:Manifest](
-    dep: Exp[RESignal[A]],
-    expr: Exp[RESignalSynt[A] => A]
+  case class SingleDepSignalCreation[A:Manifest,B](
+    dep: Exp[RESignal[B]],
+    expr: Exp[RESignalSynt[A] => A],
+    tB: Manifest[B]
   ) extends Def[RESignalSynt[A]] {
-    val t = manifest[A]
+    val tA = manifest[A]
   }
 
   override def sig_ops_newStaticSignal[A:Manifest](
@@ -117,7 +123,7 @@ trait SignalOps extends FunctionsExp with EffectExp {
       case Reflect(SigApply(a), u, es) =>
         reflectMirrored(Reflect(SigApply(f(a)), mapOver(f,u), f(es)))(mtype(manifest[A]))
       case a@SignalCreation(ds,l@Def(Lambda(func,arg,res))) => toAtom(SignalCreation(f(ds),f(l))(a.t))
-      case a@SingleDepSignalCreation(d,l@Def(Lambda(func,arg,res))) => toAtom(SingleDepSignalCreation(f(d),f(l))(a.t))
+      case a@SingleDepSignalCreation(d,l@Def(Lambda(func,arg,res)),m) => toAtom(SingleDepSignalCreation(f(d),f(l),m)(a.tA))
       case _ => super.mirror(e, f)
   }).asInstanceOf[Exp[A]]
 }
@@ -133,10 +139,10 @@ trait ScalaGenSignals extends ScalaGenReactiveBase with ScalaGenFunctions {
       stream.println(quote(getBlockResult(expr)) + "\n")
       stream.println("}")
     case s@SignalCreation(deps,expr) => emitSignalCreation(s,sym)
-    case s@SingleDepSignalCreation(dep,expr) =>
-      val str = "SignalSynt[" + s.t + "]" +
-              "(List(" + quote(dep) + "))" +
-             "{" + quote(expr) + "}"
+    case s@SingleDepSignalCreation(dep,expr,_) =>
+      val str = "SignalSynt[" + s.tA + "]" +
+        "(List(" + quote(dep) + "))" +
+        "{" + quote(expr) + "}"
       emitValDef(sym, rescalaPkg + str)
     case SigGetValue(s) => emitValDef(sym, quote(s) + ".get")
     case SigApply(s) =>

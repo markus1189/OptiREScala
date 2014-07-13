@@ -6,6 +6,8 @@ import rescala.{DepHolder, Signal => RESignal, SignalSynt => RESignalSynt}
 
 trait ConstantFolding extends EffectExp with SignalOps with SignalSyntax {
 
+  this: VarOps =>
+
   private def lambdaHasOnlyConstants[A:Manifest](f: Exp[RESignalSynt[A]] => Exp[A]): Boolean = {
 
     val ff = fun(f)
