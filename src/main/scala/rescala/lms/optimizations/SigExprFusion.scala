@@ -23,4 +23,18 @@ object FusionTransformers {
         }}
     }
   }
+
+  // Signal(d) { s => d(s) + 1 } --> d.map { x => x() + 1 }
+  // def sigExprToMap(prog: CompileScala with ReactiveDSLExp) = {
+  //   new ForwardTransformer {
+  //     val IR: prog.type = prog
+  //     import IR._
+  //     override def transformStm(stm: Stm) = {
+  //       stm match {
+  //         case TP(s,SingleDepSignalCreation(d,expr,m)) =>
+  //           sig_ops_map(d,expr)
+  //         case _ => super.transformStm(stm)
+  //       }}
+  //   }
+  // }
 }

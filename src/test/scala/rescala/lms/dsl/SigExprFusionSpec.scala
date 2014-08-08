@@ -21,9 +21,25 @@ class SigExprFusionSpec extends WordSpec with Matchers {
 
       val trans = FusionTransformers.sigApplyDepTransformer(prog)
 
-      val result = prog.compile({_: trans.IR.Rep[Unit] => trans.reflectBlock(trans.transformBlock(prog.reifyEffects(prog.f(prog.fresh[Unit]))))}).apply( () )
+      val transformed = { _: trans.IR.Rep[Unit] =>
+        trans.reflectBlock(
+          trans.transformBlock(
+            prog.reifyEffects(
+              prog.f(
+                prog.fresh[Unit]))))
+      }
 
-      result.get should equal(43)
+      val res = prog.compile(transformed).apply()
+
+      val (out1,out2) = (new java.io.StringWriter, new java.io.StringWriter)
+      prog.codegen.emitSource(prog.f, "Untransformed", new java.io.PrintWriter(out1))
+      prog.codegen.emitSource(transformed, "Transformed", new java.io.PrintWriter(out2))
+
+      res.get should equal(43)
+
+      println(out1.toString)
+      println("-" * 50 + "\n")
+      println(out2.toString)
     }
   }
 }
