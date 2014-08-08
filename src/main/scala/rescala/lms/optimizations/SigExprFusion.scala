@@ -17,7 +17,7 @@ object FusionTransformers {
       import IR._
       override def transformStm(stm: Stm) = {
         stm match {
-          case TP(s,Reflect(a@SigApplyDep(s1,s2),t,u)) =>   // x1(x2) --> x1()
+          case TP(_,Reflect(a@SigApplyDep(s1,s2),t,u)) =>   // x1(x2) --> x1()
             sig_ops_apply(s1)(a.t)
           case _ => super.transformStm(stm)
         }}
@@ -25,16 +25,17 @@ object FusionTransformers {
   }
 
   // Signal(d) { s => d(s) + 1 } --> d.map { x => x() + 1 }
-  // def sigExprToMap(prog: CompileScala with ReactiveDSLExp) = {
-  //   new ForwardTransformer {
-  //     val IR: prog.type = prog
-  //     import IR._
-  //     override def transformStm(stm: Stm) = {
-  //       stm match {
-  //         case TP(s,SingleDepSignalCreation(d,expr,m)) =>
-  //           sig_ops_map(d,expr)
-  //         case _ => super.transformStm(stm)
-  //       }}
-  //   }
-  // }
+  def sigExprToMap(prog: CompileScala with ReactiveDSLExp) = {
+    new ForwardTransformer {
+      val IR: prog.type = prog
+      import IR._
+      override def transformStm(stm: Stm) = {
+        stm match {
+          case TP(_,ssc@SingleDepSignalCreation(d@Sym(_),expr,m)) =>
+            val f = ??? // change expr with substitution?
+            sig_ops_map(d, {x: Exp[_] => x})
+          case _ => super.transformStm(stm)
+        }}
+    }
+  }
 }
