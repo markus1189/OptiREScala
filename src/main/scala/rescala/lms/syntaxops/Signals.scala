@@ -50,10 +50,10 @@ trait SignalOps extends FunctionsExp with EffectExp {
 
   override def sig_ops_newSignal[A:Manifest](deps: Seq[Exp[DepHolder]],
     expr: Exp[RESignalSynt[A]] => Exp[A]): Exp[RESignalSynt[A]] = deps match {
-    case Seq(Def(SignalCreation(ds2,expr2))) =>
-      val Seq(Def(sig)) = deps
-      val newSig = SignalCreation(ds2,expr2)
+    case Seq(Def(newSig@SignalCreation(ds2,expr2))) =>
       SingleDepSignalCreation(newSig,expr,newSig.t)
+    case Seq(Def(newVar@VarCreation(v))) =>
+      SingleDepSignalCreation(newVar,expr,newVar.t)
     case _ => SignalCreation(deps,fun(expr))
   }
 
@@ -142,13 +142,13 @@ trait ScalaGenSignals extends ScalaGenReactiveBase with ScalaGenFunctions {
     case s@SingleDepSignalCreation(dep,expr,_) =>
       val str = "SignalSynt[" + s.tA + "]" +
         "(List(" + quote(dep) + "))" +
-        "{" + quote(expr) + "}"
+        "{" + quote(expr) + "} /* SingleDepSignalCreation */"
       emitValDef(sym, rescalaPkg + str)
-    case SigGetValue(s) => emitValDef(sym, quote(s) + ".get")
+    case SigGetValue(s) => emitValDef(sym, quote(s) + ".get /* SigGetValue */")
     case SigApply(s) =>
-      emitValDef(sym, quote(s) + "()")
-    case SigApplyDep(s,dep) => emitValDef(sym, quote(s) + "(" + quote(dep) + ")")
-    case MappedSignal(s,f) => emitValDef(sym, quote(s) + ".map(" + quote(f) + ")" )
+      emitValDef(sym, quote(s) + "() /* SigApply */")
+    case SigApplyDep(s,dep) => emitValDef(sym, quote(s) + "(" + quote(dep) + ") /* SigApplyDep */")
+    case MappedSignal(s,f) => emitValDef(sym, quote(s) + ".map(" + quote(f) + ") /* MappedSignal */" )
     case _ => super.emitNode(sym,node)
   }
 
@@ -157,7 +157,7 @@ trait ScalaGenSignals extends ScalaGenReactiveBase with ScalaGenFunctions {
 
     val className = "SignalSynt[" + sigNode.t + "]" // use manifest for type ascription
     val quotedDeps = "(List(" + deps.map(quote).mkString(",") + "))"
-    val quotedExpr = "{" + quote(expr) + "}"
+    val quotedExpr = "{" + quote(expr) + "} /* SignalCreation */"
 
     emitValDef(sym, rescalaPkg + className + quotedDeps + quotedExpr )
   }
