@@ -11,7 +11,7 @@ import rescala.{Signal => RESignal, SignalSynt => RESignalSynt, DepHolder}
 object FusionTransformers {
 
   // sig.apply(sig2) --> sig
-  def sigApplyDepTransformer(prog: CompileScala with ReactiveDSLExp) = {
+  private def sigApplyDepTransformer(prog: CompileScala with ReactiveDSLExp) = {
     new ForwardTransformer {
       val IR: prog.type = prog
       import IR._
@@ -26,7 +26,7 @@ object FusionTransformers {
     }
   }
 
-  // Signal(d) { s => d(s) + 1 } --> d.map { x => x() + 1 }
+  // Signal(d) { s => d(s) + 1 } --> d.map { x => x + 1 }
   def sigExprToMap(prog: CompileScala with ReactiveDSLExp) = {
     new ForwardTransformer {
       val IR: prog.type = prog
