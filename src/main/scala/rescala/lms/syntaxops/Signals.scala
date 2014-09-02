@@ -7,8 +7,6 @@ import scala.reflect.SourceContext
 import rescala.{DepHolder, SignalSynt => RESignalSynt, Signal => RESignal}
 import scala.virtualization.lms.common.{Base, BaseExp, FunctionsExp, ScalaGenFunctions, EffectExp}
 
-
-
 trait SignalSyntax extends Base {
   object Signal {
     def apply[A:Manifest](
@@ -43,6 +41,7 @@ trait SignalSyntax extends Base {
   def sig_ops_apply[A:Manifest](s: Rep[RESignal[A]]): Rep[A]
   def sig_ops_apply_dep[A:Manifest](sig: Rep[RESignal[A]], depSig: Rep[RESignalSynt[_]]): Rep[A]
   def sig_ops_map[A:Manifest, B:Manifest](sig: Rep[RESignal[A]], f: Rep[A] => Rep[B]): Rep[RESignal[B]]
+  def sig_ops_map_rep[A:Manifest, B:Manifest](sig: Rep[RESignal[A]], f: Rep[A => B]): Rep[RESignal[B]]
 }
 
 trait SignalOps extends FunctionsExp with EffectExp {
@@ -57,7 +56,7 @@ trait SignalOps extends FunctionsExp with EffectExp {
     case _ => SignalCreation(deps,fun(expr))
   }
 
-  case class SignalCreation[A:Manifest](deps: Seq[Exp[DepHolder]],
+ case class SignalCreation[A:Manifest](deps: Seq[Exp[DepHolder]],
     expr: Exp[RESignalSynt[A] => A]) extends Def[RESignalSynt[A]] {
     val t = manifest[A]
   }
@@ -101,9 +100,15 @@ trait SignalOps extends FunctionsExp with EffectExp {
   override def sig_ops_map[A:Manifest, B:Manifest](sig: Exp[RESignal[A]], f: Exp[A] => Exp[B]): Exp[RESignal[B]] =
     MappedSignal(sig, doLambda(f))
 
+  override def sig_ops_map_rep[A:Manifest, B:Manifest](sig: Exp[RESignal[A]], f: Exp[A => B]): Exp[RESignal[B]] =
+      MappedSignal(sig, f)
+
+  // uses implicit function to convert from Def to Exp
+  def sig_ops_map_new[A:Manifest, B:Manifest](sig: Exp[RESignal[A]], f: Def[A => B]): Exp[RESignal[B]] = MappedSignal(sig, f)
+
   case class MappedSignal[A:Manifest,B:Manifest](
     sig: Exp[RESignal[A]],
-    f: Rep[A => B]
+    f: Exp[A => B]
   ) extends Def[RESignal[B]] {
     val t = (manifest[A],manifest[B])
   }
@@ -118,6 +123,7 @@ trait SignalOps extends FunctionsExp with EffectExp {
     e: Def[A],
     f: Transformer)(implicit pos: SourceContext): Exp[A] = (e match {
       case SigApplyDep(a,b) => sig_ops_apply_dep(f(a),f(b))
+      case MappedSignal(sig,f) => sig_ops_map_rep(sig,f)
       case Reflect(SigApplyDep(a,b), u, es) =>
         reflectMirrored(Reflect(SigApplyDep(f(a),f(b)), mapOver(f,u), f(es)))(mtype(manifest[A]))
       case Reflect(SigApply(a), u, es) =>

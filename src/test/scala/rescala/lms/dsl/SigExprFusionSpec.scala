@@ -19,34 +19,33 @@ class SigExprFusionSpec extends WordSpec with Matchers {
         }
       }
 
-      val trans = FusionTransformers.sigApplyDepTransformer(prog)
+      val trans = FusionTransformers.sigExprToMap(prog)
 
-      val transformed = { _: trans.IR.Rep[Unit] =>
-        trans.reflectBlock(
-          trans.transformBlock(
-            prog.reifyEffects(
-              prog.f(
-                prog.fresh[Unit]))))
+      val arg = prog.fresh[Unit]
+      val blk = prog.reifyEffects(prog.f(arg))
+
+      val out = new java.io.StringWriter
+      prog.codegen.withStream(new PrintWriter(out)) {
+        prog.codegen.emitBlock(blk)
       }
 
-      val res = prog.compile(transformed).apply()
+      val transformedProg = { _: trans.IR.Rep[Unit] =>
+        trans.reflectBlock(trans.transformBlock(blk))
+      }
 
-      val (out1,out2) = (new java.io.StringWriter, new java.io.StringWriter)
-      prog.codegen.emitSource(prog.f, "Untransformed", new java.io.PrintWriter(out1))
-      prog.codegen.emitSource(transformed, "Transformed", new java.io.PrintWriter(out2))
+      prog.codegen.emitSource(transformedProg, "Transformed", new java.io.PrintWriter(out))
 
-      res.get should equal(43)
+      val result = prog.compile(transformedProg).apply()
+      result.get should equal(43)
 
-      println(out1.toString)
-      println("-" * 50 + "\n")
-      println(out2.toString)
+      out.toString.lines.toList.filter(_.contains("MappedSignal")) should have length(1)
     }
   }
 }
 
 trait SigExprFusionProg extends ReactiveDSL {
-  def f(x : Rep[Unit]) = {
-    val s0 = Var(unit(42))
+  def f(x : Rep[Unit]): Rep[RESignal[Int]] = {
+    val s0 = Signal() { s: Rep[RESignalSynt[Int]] => unit(42) }
 
     val s1 = Signal(s0) { s: Rep[RESignalSynt[Int]] => s0(s) + 1}
 
