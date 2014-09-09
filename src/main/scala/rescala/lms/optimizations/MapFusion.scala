@@ -20,6 +20,11 @@ trait MapFusionSyntax extends Base {
     s: Rep[RESignal[A]],
     f: Rep[A] => Rep[B]
   ): Rep[RESignal[B]]
+
+  def sig_ops_fused_map_rep[A:Manifest,B:Manifest](
+    s: Rep[RESignal[A]],
+    f: Rep[A => B]
+  ): Rep[RESignal[B]]
 }
 
 /** Override the standard map function with the fused version. */
@@ -29,6 +34,9 @@ trait MapFusionOverride extends Base {
 
   override def sig_ops_map[A:Manifest,B:Manifest](sig: Rep[RESignal[A]],
     f: Rep[A] => Rep[B]): Rep[RESignal[B]] = sig_ops_fused_map(sig,f)
+
+  override def sig_ops_map_rep[A:Manifest, B:Manifest](sig: Rep[RESignal[A]],
+    f: Rep[A => B]): Rep[RESignal[B]] = sig_ops_fused_map_rep(sig, f)
 }
 
 /** Implement the fused mapping by creating nested versions of
@@ -49,15 +57,18 @@ trait MapFusionOps extends MapFusionSyntax with FunctionsExp {
     f: Exp[B => C], g: Exp[A => B]): Exp[A => C] =
     FunctionComposition(f,g)
 
-  override def sig_ops_fused_map[A:Manifest,B:Manifest](sig: Exp[RESignal[A]],
-    f: Exp[A] => Exp[B]): Exp[RESignal[B]] = sig match {
+  override def sig_ops_fused_map_rep[A:Manifest,B:Manifest](sig: Exp[RESignal[A]],
+    f: Exp[A => B]): Exp[RESignal[B]] = sig match {
 
     case Def(MappedSignal(unmappedSig,g)) => // Map called on a already mapped signal
-      MappedSignal(unmappedSig, doLambda(f).compose(g))
+      MappedSignal(unmappedSig, f.compose(g))
 
     case _ => // First map or previous call was not a map
-      MappedSignal(sig, doLambda(f))
+      MappedSignal(sig, f)
   }
+
+  override def sig_ops_fused_map[A:Manifest,B:Manifest](sig: Exp[RESignal[A]],
+    f: Exp[A] => Exp[B]): Exp[RESignal[B]] = sig_ops_fused_map_rep(sig, doLambda(f))
 }
 
 /** Provide code generation for the function composition helper */
