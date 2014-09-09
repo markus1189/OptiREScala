@@ -49,6 +49,8 @@ trait SignalOps extends FunctionsExp with EffectExp {
 
   override def sig_ops_newSignal[A:Manifest](deps: Seq[Exp[DepHolder]],
     expr: Exp[RESignalSynt[A]] => Exp[A]): Exp[RESignalSynt[A]] = deps match {
+    case Seq(Def(newSig@SingleDepSignalCreation(dep,expr2,_))) =>
+      SingleDepSignalCreation(newSig,expr,newSig.tA)
     case Seq(Def(newSig@SignalCreation(ds2,expr2))) =>
       SingleDepSignalCreation(newSig,expr,newSig.t)
     case Seq(Def(newVar@VarCreation(v))) =>
@@ -97,14 +99,13 @@ trait SignalOps extends FunctionsExp with EffectExp {
     val t = manifest[A]
   }
 
-  override def sig_ops_map[A:Manifest, B:Manifest](sig: Exp[RESignal[A]], f: Exp[A] => Exp[B]): Exp[RESignal[B]] =
-    MappedSignal(sig, doLambda(f))
+  override def sig_ops_map[A:Manifest, B:Manifest](sig: Exp[RESignal[A]], f: Exp[A] => Exp[B]): Exp[RESignal[B]] = sig_ops_map_rep(sig, doLambda(f))
 
   override def sig_ops_map_rep[A:Manifest, B:Manifest](sig: Exp[RESignal[A]], f: Exp[A => B]): Exp[RESignal[B]] =
       MappedSignal(sig, f)
 
   // uses implicit function to convert from Def to Exp
-  def sig_ops_map_new[A:Manifest, B:Manifest](sig: Exp[RESignal[A]], f: Def[A => B]): Exp[RESignal[B]] = MappedSignal(sig, f)
+  def sig_ops_map_new[A:Manifest, B:Manifest](sig: Exp[RESignal[A]], f: Def[A => B]): Exp[RESignal[B]] = sig_ops_map_rep(sig,f)
 
   case class MappedSignal[A:Manifest,B:Manifest](
     sig: Exp[RESignal[A]],
