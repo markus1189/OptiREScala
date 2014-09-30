@@ -2,6 +2,7 @@ package rescala.lms.optimizations
 
 import scala.virtualization.lms.common.{Base, EffectExp, ScalaGenEffect, FunctionsExp}
 import scala.virtualization.lms.internal.Expressions
+import scala.reflect.SourceContext
 import language.implicitConversions
 import rescala.lms.syntaxops._
 
@@ -69,6 +70,12 @@ trait MapFusionOps extends MapFusionSyntax with FunctionsExp {
 
   override def sig_ops_fused_map[A:Manifest,B:Manifest](sig: Exp[RESignal[A]],
     f: Exp[A] => Exp[B]): Exp[RESignal[B]] = sig_ops_fused_map_rep(sig, doLambda(f))
+
+  override def mirror[A:Manifest](e: Def[A], t: Transformer)(
+    implicit pos: SourceContext): Exp[A] = (e match {
+      case FunctionComposition(f,g) => toAtom(FunctionComposition(f,g.asInstanceOf[Exp[A => Any]]))
+      case _ => super.mirror(e, t)
+    }).asInstanceOf[Exp[A]]
 }
 
 /** Provide code generation for the function composition helper */
@@ -77,8 +84,8 @@ trait ScalaGenMapFusion extends ScalaGenReactiveBase {
   import IR._
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit =  node match {
-    case FunctionComposition(g,f) => emitValDef(sym,
-      quote(f) + ".compose(" + quote(g) +")")
+    case FunctionComposition(f,g) => emitValDef(sym,
+      quote(g) + ".compose(" + quote(f) +")")
     case _ => super.emitNode(sym,node)
   }
 }
