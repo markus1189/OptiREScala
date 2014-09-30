@@ -39,14 +39,14 @@ class SigExprFusionSpec extends WordSpec with Matchers {
       val transformedSource = new java.io.StringWriter
       prog.codegen.emitSource(transformedProg, "Transformed", new java.io.PrintWriter(transformedSource))
 
-      println(untransformedSource.toString)
-      println(transformedSource.toString)
-
-      // We should have a twice mapped signal
-      transformedSource.toString.lines.toList.filter(_.contains("MappedSignal")) should have length(2)
+      // We should have only one mapped signal
+      transformedSource.toString.lines.toList.filter(_.contains("MappedSignal")) should have length(1)
 
       // All SingleDepSignalCreation should be replaced with maps
       transformedSource.toString.lines.toList.filter(_.contains("SingleDepSignalCreation")) should have length(0)
+
+      // There should be one compose call
+      transformedSource.toString.lines.toList.filter(_.contains(".compose(")) should have length(1)
 
       // Final result is correct?
       val result = prog.compile(transformedProg).apply()
