@@ -36,8 +36,14 @@ object FusionTransformers {
           case TP(_,ssc@SingleDepSignalCreation(d@Sym(_),Def(Lambda(_,_,exprBdy)),_)) =>
             val freshLambdaParam = fresh(ssc.tB)
             subst += d -> freshLambdaParam // replace d with λ arg inside expression
-            val transformed: Block[Any] = sigApplyDepTransformer(prog).transformBlock(transformBlock(exprBdy))
+
+            // Transform body to remove apply with dep
+            val transformed: Block[Any] =
+              sigApplyDepTransformer(prog).transformBlock(transformBlock(exprBdy))
+
+            // new body of the lambda
             val constant: Exp[Any] => Exp[Any] = s => transformed.res
+
             sig_ops_map_new(d, Lambda(constant, freshLambdaParam, transformed))
           case _ => super.transformStm(stm)
         }}
