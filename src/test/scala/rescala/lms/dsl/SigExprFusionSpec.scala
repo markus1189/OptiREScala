@@ -39,7 +39,6 @@ class SigExprFusionSpec extends WordSpec with Matchers {
       val transformedSource = new java.io.StringWriter
       prog.codegen.emitSource(transformedProg, "Transformed", new java.io.PrintWriter(transformedSource))
 
-      val result = prog.compile(transformedProg).apply()
       println(untransformedSource.toString)
       println(transformedSource.toString)
 
@@ -50,6 +49,7 @@ class SigExprFusionSpec extends WordSpec with Matchers {
       transformedSource.toString.lines.toList.filter(_.contains("SingleDepSignalCreation")) should have length(0)
 
       // Final result is correct?
+      val result = prog.compile(transformedProg).apply()
       result.get should equal(44)
     }
   }
