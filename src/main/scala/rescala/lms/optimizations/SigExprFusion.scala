@@ -27,26 +27,34 @@ object FusionTransformers {
   }
 
   // Signal(d) { s => d(s) + 1 } --> d.map { x => x + 1 }
-  def sigExprToMap(prog: CompileScala with ReactiveDSLExp) = {
-    new ForwardTransformer {
-      val IR: prog.type = prog
-      import IR._
-      override def transformStm(stm: Stm) = {
-        stm match {
-          case TP(_,ssc@SingleDepSignalCreation(d@Sym(_),Def(Lambda(_,_,exprBdy)),_)) =>
-            val freshLambdaParam = fresh(ssc.tB)
-            subst += d -> freshLambdaParam // replace d with λ arg inside expression
+  def sigExprToMap(prog: CompileScala with ReactiveDSLExp) = new ForwardTransformer {
+    val IR: prog.type = prog
+    import IR._
+    override def transformStm(stm: Stm) = {
+      stm match {
+        case TP(willBeTransformed,ssc@SingleDepSignalCreation(d@Sym(_),Def(Lambda(_,_,exprBdy)),_)) =>
+          val actualD = apply(d)
+          val freshLambdaParam = fresh(ssc.tB)
+          subst += d -> freshLambdaParam // replace d with λ arg inside expression
 
-            // Transform body to remove apply with dep
-            val transformed: Block[Any] =
-              sigApplyDepTransformer(prog).transformBlock(transformBlock(exprBdy))
+          // Transform body to remove apply with dep
+          val transformed: Block[Any] =
+            sigApplyDepTransformer(prog).transformBlock(transformBlock(apply(exprBdy)))
 
-            // new body of the lambda
-            val constant: Exp[Any] => Exp[Any] = s => transformed.res
+          // new body of the lambda
+          val constant: Exp[Any] => Exp[Any] = s => transformed.res
 
-            sig_ops_map_new(d, Lambda(constant, freshLambdaParam, transformed))
-          case _ => super.transformStm(stm)
-        }}
+          val result = sig_ops_map_new(actualD, Lambda(constant, freshLambdaParam, transformed))
+
+          val TP(resSym,newMappedSignal) =
+            globalDefsCache.get(result.asInstanceOf[Sym[Any]]).
+              getOrElse(throw new Exception(
+                "Created map signal not found. (SigExprTransformer)"))
+
+          subst += willBeTransformed -> resSym
+          result
+        case _ =>
+          super.transformStm(stm)
+      }}
     }
-  }
 }
