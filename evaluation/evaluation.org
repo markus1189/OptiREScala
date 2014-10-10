@@ -1,0 +1,90 @@
+#+OPTIONS: toc:nil author:nil ':t todo:nil -:t
+#+TITLE: OptiREScala - Evaluation
+
+#+BEGIN_SRC dot :file chain.png
+digraph g {
+  rankdir=RL;
+
+  var [shape=rect];
+  client1 [label="client", shape=diamond];
+  client2 [label="client", shape=diamond];
+
+  "f3(y)" -> "y = f2(x)" -> "x = f1(var)" -> var;
+  "x = (f3·f2·f1)(var)" -> var;
+
+  client1 -> "f3(y)"
+  client2 -> "x = (f3·f2·f1)(var)"
+}
+#+END_SRC
+
+#+NAME: fig:chain-fuse
+#+CAPTION: Fusing chains of signals
+#+RESULTS:
+[[file:chain.png]]
+
+#+BEGIN_SRC dot :file tree.png
+digraph tree {
+  rankdir=BT;
+  var [shape=rect];
+  client [shape=diamond];
+
+  f1 -> var;
+  f2 -> var;
+
+  f3 -> f1;
+  f4 -> f1;
+
+  f5 -> f3;
+  f6 -> f3;
+
+  f7 -> f4;
+  f8 -> f4;
+
+  f9 -> f2;
+ f10 -> f2;
+
+ f11 -> f9;
+ f12 -> f9;
+
+ f13 -> f10;
+ f14 -> f10;
+
+ client -> f5;
+ client -> f6;
+ client -> f7;
+ client -> f8;
+ client -> f11;
+ client -> f12;
+ client -> f13;
+ client -> f14;
+}
+#+END_SRC
+
+#+NAME: fig:tree-unfused
+#+CAPTION: Unfused tree
+#+ATTR_LATEX: :width 0.6\linewidth
+#+RESULTS:
+[[file:tree.png]]
+
+#+BEGIN_SRC dot :file tree_fused.png
+digraph tree {
+  rankdir = BT;
+  var [shape=rect];
+  client [shape=diamond];
+
+  client -> "f5·f3·f1" -> var;
+  client -> "f6·f3·f1" -> var;
+  client -> "f7·f4·f1" -> var;
+  client -> "f8·f4·f1" -> var;
+  client -> "f11·f9·f2" -> var;
+  client -> "f12·f9·f2" -> var;
+  client -> "f13·f10·f2" -> var;
+  client -> "f14·f10·f2" -> var;
+}
+#+END_SRC
+
+#+NAME: fig:tree-fused
+#+CAPTION: Fused tree
+#+ATTR_LATEX: :width 0.6\linewidth
+#+RESULTS:
+[[file:tree_fused.png]]
