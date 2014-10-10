@@ -33,6 +33,9 @@ object FusionTransformers {
     override def transformStm(stm: Stm) = {
       stm match {
         case TP(willBeTransformed,ssc@SingleDepSignalCreation(d@Sym(_),Def(Lambda(_,_,exprBdy)),_)) =>
+
+          // important, we may already have transformed 'd', this
+          // makes sure we pick the new one (actualD)
           val actualD = apply(d)
           val freshLambdaParam = fresh(ssc.tB)
           subst += d -> freshLambdaParam // replace d with λ arg inside expression
