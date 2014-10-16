@@ -25,6 +25,7 @@ object Build extends Build {
     scalaOrganization := "org.scala-lang.virtualized",
 
     libraryDependencies ++= Seq(
+      "org.scala-lang" % "scala-swing" % "2.10.4",
       "org.scalatest" %% "scalatest" % "2.1.2",
       "org.scala-lang.virtualized" % "scala-compiler" % virtScala,
       "org.scala-lang.virtualized" % "scala-library" % virtScala,
