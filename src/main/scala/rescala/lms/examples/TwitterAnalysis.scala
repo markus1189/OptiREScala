@@ -1,5 +1,6 @@
 package rescala.lms.examples
 
+import java.awt.Font
 import scala.swing._
 import scala.swing.BorderPanel.Position._
 import event._
@@ -55,69 +56,34 @@ object Functions {
 
 object SimpleGUI extends SimpleSwingApplication {
   def top = new MainFrame { // top is a required method
-    title = "A Sample Scala Swing GUI"
+    title = "Twitter Word Cloud"
 
-    // declare Components here
-    val label = new Label {
-      text = "I'm a big label!."
-      font = new Font("Ariel", java.awt.Font.ITALIC, 24)
-    }
-    val button = new Button {
-      text = "Throw!"
-      foreground = Color.blue
-      background = Color.red
-      borderPainted = true
-      enabled = true
-      tooltip = "Click to throw a dart"
-    }
-    val toggle = new ToggleButton { text = "Toggle" }
-    val checkBox = new CheckBox { text = "Check me" }
-    val textField = new TextField {
-      columns = 10
-      text = "Click on the target!"
-    }
-    val textArea = new TextArea {
-      text = "initial text\nline two"
-      background = Color.green
-    }
-    val gridPanel = new GridPanel(1, 2) {
-      contents += checkBox
-      contents += label
-      contents += textArea
-    }
+    val words = Seq("berzelius","intrepidly","wren","salivary","tar","straplesses","williamson","servitude","snowdrift","tigers","sumach","exile","molnar","sandbag","semester","japanese","faithful","blunders","freights","falsetto","dewy","pernod","scrambler","conventionality","forenames","hackneying","bust","attar","johnathan","spontaneous","elaboration","cubicles","tianjin","spicy","funerals","cosmologist","smacker","isuzu","klondikes","registrar","landmass","caribou","micky","walkout","connolly","shrieks","medicaids","archway","jersey","brain","beetle","viva","furriest","sinewy","witting","butterfingers","gentry","seeding","underwear","barrelled","brooke","redcoats","extravert","mutual","inferior","timidest","incidentally","virtue","designation","acquaint","yuck","palaces","regal","grommets","copernicus","excommunications","inalienable","consequence","elongates","barrenness","chorus","grommet","agile","chichi","episcopalians","bathmat","mousiness","rheumier","wilson","guppy","selector","details","thornton","lean","parker","puncture","anorexia","hals","proscribe")
 
-    // choose a top-level Panel and put components in it
-    // Components may include other Panels
-    contents = new BorderPanel {
-      layout(gridPanel) = North
-      layout(button) = West
-      layout(toggle) = East
-      layout(textField) = South
-    }
-    size = new Dimension(300, 200)
-    menuBar = new MenuBar {
-      contents += new Menu("File") {
-        contents += new MenuItem(Action("Exit") {
-          sys.exit(0)
-        })
+    def randomWeights(words: Seq[String]): Seq[(String,Int)] = words.map { w => (w,scala.util.Random.nextInt(50))}
+
+    def createLabels(wordsWithWeight: Seq[(String,Int)]): Seq[Label] =
+      wordsWithWeight.map { case (word,weight) =>
+        val label = new Label(word)
+        label.font = new Font(label.font.getName, Font.PLAIN, weight)
+        label
       }
-    }
 
-    // specify which Components produce events of interest
-    listenTo(button)
-    listenTo(toggle)
+    val fromWords = (createLabels _).compose(randomWeights _)
 
-    // react to events
-    reactions += {
-      case ButtonClicked(component) if component == button =>
-        val x = Random.nextInt(100)
-        val y = Random.nextInt(100)
-        val c = new Color(Random.nextInt(Int.MaxValue))
-        textField.text = s"Dart thrown at $x, $y"
-      case ButtonClicked(component) if component == toggle =>
-        toggle.text = if (toggle.selected) "On" else "Off"
-      case MouseClicked(_, point, _, _, _) =>
-        textField.text = (s"You clicked in the Canvas at x=${point.x}, y=${point.y}.")
+    val panel = new FlowPanel { contents ++= fromWords(words)}
+
+    contents = panel
+    size = new Dimension(300, 200)
+
+    future {
+      while (true) {
+        Thread.sleep(5000)
+        panel.contents.clear()
+        panel.contents ++= fromWords(words)
+        Thread.sleep(1000)
+        panel.revalidate()
+      }
     }
   }
 }
