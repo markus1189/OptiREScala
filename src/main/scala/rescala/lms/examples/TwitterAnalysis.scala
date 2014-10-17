@@ -30,6 +30,7 @@ object TwitterAnalysis extends SimpleSwingApplication {
       map(Functions.toWords).
       map(_.flatten).
       map(Functions.lowercase).
+      // symbols like <3, :), etc
       // stopwords
       // stemming
       map(Functions.wordFrequency).
