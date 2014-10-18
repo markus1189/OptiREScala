@@ -1,19 +1,21 @@
 package rescala.lms.examples
 
-import java.awt.Font
-import scala.swing._
-import scala.swing.BorderPanel.Position._
-import event._
+import java.io._
 import java.awt.{ Color, Graphics2D }
-import scala.util.Random
-
+import java.awt.Font
 import rescala.events.ImperativeEvent
 import rescala.IFunctions
+import rescala.lms._
 import rescala.Signal
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.io.Source
+import scala.swing._
+import scala.swing.BorderPanel.Position._
+import scala.swing.event._
+import scala.util.Random
+import virtualization.lms.common.CompileScala
 
 trait Resources {
   def stopwords: Set[String] = Source.fromFile("stopwords-en.txt").getLines.toSet
@@ -114,5 +116,43 @@ object NormalTwitterAnalysis extends TwitterAnalysis with HasProgram with Resour
       map(Functions.normalizeFrequency).
       map(_.toSeq).
       map(Functions.createLabels)
+  }
+}
+
+object LMSTwitterAnalysis extends TwitterAnalysis with HasProgram with Resources {
+  def program = compiledProg
+
+  val prog = new LMSTwitterProgram with ReactiveDSLExp with CompileScala { self =>
+    override val codegen = new ReactiveDSLGen {
+      val IR: self.type = self
+    }
+  }
+
+  val out = new StringWriter
+  prog.codegen.emitSource(prog.f, "F", new PrintWriter(out))
+  println(out.toString)
+
+  val compiledProg = prog.compile(prog.f).apply( () )
+
+  trait LMSTwitterProgram extends ReactiveDSL {
+    def f(x: Rep[Unit]): Rep[Signal[Seq[String]] => Signal[Seq[Label]]] =
+      (input: Rep[Signal[Seq[String]]]) => {
+      input.
+        fuseMapRep(unit(Functions.toWords)).
+        fuseMapRep(unit {
+          (x: Seq[Seq[String]]) => x.flatten
+        }).
+        fuseMapRep(unit(Functions.lowercase)).
+        // stemming).
+        fuseMapRep(unit(Functions.removeWords(stopwords))).
+        fuseMapRep(unit(Functions.removeWords(garbage))).
+        fuseMapRep(unit(Functions.wordFrequency)).
+        fuseMapRep(unit {
+          (x: Map[String,Int]) => x.filter { case (word,weight) => weight > 1 }}
+        ).
+        fuseMapRep(unit(Functions.normalizeFrequency)).
+        fuseMapRep(unit((x: Map[String,Float]) => x.toSeq)).
+        fuseMapRep(unit(Functions.createLabels))
+    }
   }
 }

@@ -15,6 +15,8 @@ trait MapFusionSyntax extends Base {
   case class MapFusionOps[A:Manifest](s: Rep[RESignal[A]]) {
     def fuseMap[B:Manifest](f: Rep[A] => Rep[B]): Rep[RESignal[B]] =
       sig_ops_fused_map(s,f)
+    def fuseMapRep[B:Manifest](f: Rep[A => B]): Rep[RESignal[B]] =
+      sig_ops_fused_map_rep(s,f)
   }
 
   def sig_ops_fused_map[A:Manifest,B:Manifest](
