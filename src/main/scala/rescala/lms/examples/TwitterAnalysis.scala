@@ -104,15 +104,15 @@ object NormalTwitterAnalysis extends TwitterAnalysis with HasProgram with Resour
   def program = input => {
     input.
       map(Functions.toWords).
-      map(((x: Seq[Seq[String]]) => x.flatten)).
+      map((_.flatten)).
       map(Functions.lowercase).
       // stemming).
       map(Functions.removeWords(stopwords)).
       map(Functions.removeWords(garbage)).
       map(Functions.wordFrequency).
-      map(((x: Map[String,Int]) => x.filter { case (word,weight) => weight > 1 })).
+      map(_.filter { case (word,weight) => weight > 1 }).
       map(Functions.normalizeFrequency).
-      map(((x: Map[String,Float]) => x.toSeq)).
+      map(_.toSeq).
       map(Functions.createLabels)
   }
 }
