@@ -15,56 +15,22 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.io.Source
 
-object TwitterAnalysis extends SimpleSwingApplication {
-  val BATCH_SIZE = 1000
-  val SLEEP_DURATION = 125
-
-  val tweetEvent = new ImperativeEvent[String]
-
-  val tweets = Source.fromFile("tweets.csv").getLines.toSeq
-
-  val tweetsInput: Signal[Seq[String]] = tweetEvent.last(100)
-
-  val processedTweets =
-    tweetsInput.
-      map(Functions.toWords).
-      map(_.flatten).
-      map(Functions.lowercase).
-      // symbols like <3, :), etc
-      // stopwords
-      // stemming
-      map(Functions.wordFrequency).
-      map(_.filter { case (word,weight) => weight > 1 }).
-      map(Functions.normalizeFrequency).
-      map(_.toSeq).
-      map(Functions.createLabels)
-
-  def top = new MainFrame { // top is a required method
-    title = "Twitter Word Cloud"
-
-    val panel = new FlowPanel
-
-    processedTweets.changed += { labels =>
-      panel.contents.clear
-      panel.contents ++= labels
-      panel.revalidate()
-      panel.repaint()
-    }
-
-    contents = panel
-    size = new Dimension(300, 200)
-  }
-
-  val fut = future {
-    tweets.foreach { tweet =>
-      Thread.sleep(SLEEP_DURATION)
-      tweetEvent(tweet)
-    }
-  }
+trait Resources {
+  def stopwords: Set[String] = Source.fromFile("stopwords-en.txt").getLines.toSet
+  def garbage: Set[String] =
+    Set(
+      "rt", ":)", ":-)", "^-^", "o:)", "o:-)", ":d", ":-d",
+      "}:>", "}:->", ":x", "", ":-x", ";)", ";-)", ":(", ":-(",
+      ":c", ":-c", ":'(", ":'-(", ":-/", ":>", ":->", ":p", ":-p",
+      ":*", ":-*", ":o", ":-o", ":o", ":-o", ":v", ":-v", "8)",
+      "8-)", "|:o", "o_o", "o_o", "<_<", "-_-", "<3", "(:", "):",
+      "(-:", ")-:", "._.", "☺", ";d", "❤", "♡", "=(", "=)","♥",
+      "&lt;3","&amp;"
+    )
 }
 
 object Functions {
-  val lowercase: Seq[String] => Seq[String] = _.map(_.map(_.toLower))
+  val lowercase: Seq[String] => Seq[String] = _.map(_.toLowerCase)
 
   val toWords: Seq[String] => Seq[Seq[String]] = _.map(_.split("\\s+").toSeq)
 
@@ -86,9 +52,67 @@ object Functions {
   }
 
   val createLabels: Seq[(String,Float)] => Seq[Label] = wordsWithWeight =>
-    wordsWithWeight.map { case (word,weight) =>
-      val label = new Label(word)
-      label.font = new Font(label.font.getName, Font.PLAIN, (weight*100).toInt)
-      label
+  wordsWithWeight.map { case (word,weight) =>
+    val label = new Label(" " + word + " ")
+    label.font = new Font(label.font.getName, Font.PLAIN, (weight*100).toInt)
+    label
+  }
+
+  val removeWords: Set[String] => Seq[String] => Seq[String] =
+    ws => _.filterNot(ws)
+}
+
+trait TwitterAnalysis extends SimpleSwingApplication {
+  this: HasProgram =>
+
+  val TWEET_DELAY = 1
+  val WINDOW_SIZE = 1000
+
+  val tweetEvent = new ImperativeEvent[String]
+  val tweetsInput: Signal[Seq[String]] = tweetEvent.last(WINDOW_SIZE)
+
+  val tweets: Seq[String] = Source.fromFile("tweets.csv").getLines.toSeq
+  tweets.take(WINDOW_SIZE).foreach(tweetEvent(_)) // Fill the first window
+
+  def top = new MainFrame { // top is a required method
+    title = "Twitter Word Cloud"
+
+    val panel = new FlowPanel
+
+    program(tweetsInput).changed += { labels =>
+      panel.contents.clear
+      panel.contents ++= labels
+      panel.revalidate()
+      panel.repaint()
     }
+
+    contents = panel
+    size = new Dimension(300, 200)
+  }
+
+  val fut = future {
+    tweets.drop(WINDOW_SIZE).foreach { tweet =>
+      Thread.sleep(TWEET_DELAY)
+      tweetEvent(tweet)
+    }
+  }
+}
+
+trait HasProgram { def program: Signal[Seq[String]] => Signal[Seq[Label]] }
+
+object NormalTwitterAnalysis extends TwitterAnalysis with HasProgram with Resources {
+  def program = input => {
+    input.
+      map(Functions.toWords).
+      map(((x: Seq[Seq[String]]) => x.flatten)).
+      map(Functions.lowercase).
+      // stemming).
+      map(Functions.removeWords(stopwords)).
+      map(Functions.removeWords(garbage)).
+      map(Functions.wordFrequency).
+      map(((x: Map[String,Int]) => x.filter { case (word,weight) => weight > 1 })).
+      map(Functions.normalizeFrequency).
+      map(((x: Map[String,Float]) => x.toSeq)).
+      map(Functions.createLabels)
+  }
 }
