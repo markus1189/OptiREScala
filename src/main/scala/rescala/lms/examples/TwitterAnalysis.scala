@@ -89,7 +89,7 @@ trait TwitterAnalysis extends SimpleSwingApplication {
     }
 
     contents = panel
-    size = new Dimension(300, 200)
+    size = new Dimension(1200, 700)
   }
 
   val fut = future {
