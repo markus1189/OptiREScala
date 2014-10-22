@@ -21,7 +21,9 @@ trait Reactivity
     with FibonacciSyntax
     with LMSSyntax  // Include some syntax from LMS
 
-trait LMSSyntax extends Functions
+trait LMSSyntax
+    extends Functions
+    with MapOps
 
 trait ReactivityExp
     extends Reactivity
@@ -35,6 +37,7 @@ trait ReactivityExp
 trait LMSProvided
     extends ListOpsExp
     with SeqOpsExp
+    with MapOpsExp
     with EffectExp
     with OrderingOpsExp
     with NumericOpsExp
@@ -46,7 +49,8 @@ trait ScalaGenReactivity extends ScalaGenReactiveBase
     with ScalaGenSignals
     with ScalaGenMapFusion
     with ScalaGenFibonacci
-    with LMSProvidedGen /* Include code generators at least for LMSProvided traits*/{
+    with ScalaGenMapOps
+    with LMSProvidedGen {
   val IR: ReactivityExp
   import IR._
 }
