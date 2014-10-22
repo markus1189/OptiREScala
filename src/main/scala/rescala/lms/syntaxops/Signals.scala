@@ -126,9 +126,9 @@ trait SignalOps extends FunctionsExp with EffectExp {
       case SigApplyDep(a,b) => sig_ops_apply_dep(t(a),t(b))
       case MappedSignal(sig,f) => sig_ops_map_rep(sig,t(f))
       case Reflect(SigApplyDep(a,b), u, es) =>
-        reflectMirrored(Reflect(SigApplyDep(t(a),t(b)), mapOver(t,u), t(es)))(mtype(manifest[A]))
+        reflectMirrored(Reflect(SigApplyDep(t(a),t(b)), mapOver(t,u), t(es)))(mtype(manifest[A]), pos)
       case Reflect(SigApply(a), u, es) =>
-        reflectMirrored(Reflect(SigApply(t(a)), mapOver(t,u), t(es)))(mtype(manifest[A]))
+        reflectMirrored(Reflect(SigApply(t(a)), mapOver(t,u), t(es)))(mtype(manifest[A]), pos)
       case a@SignalCreation(ds,l@Def(Lambda(func,arg,res))) => toAtom(SignalCreation(t(ds),t(l))(a.t))
       case a@SingleDepSignalCreation(d,l@Def(Lambda(func,arg,res)),m) => toAtom(SingleDepSignalCreation(t(d),t(l),m)(a.tA))
       case _ => super.mirror(e, t)
