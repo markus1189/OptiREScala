@@ -81,7 +81,7 @@ trait TwitterAnalysis extends SimpleSwingApplication {
 
     val panel = new FlowPanel
 
-    program(tweetsInput).changed += { labels =>
+    program(tweetsInput).map(Functions.createLabels).changed += { labels =>
       panel.contents.clear
       panel.contents ++= labels
       panel.revalidate()
@@ -100,7 +100,7 @@ trait TwitterAnalysis extends SimpleSwingApplication {
   }
 }
 
-trait HasProgram { def program: Signal[Seq[String]] => Signal[Seq[Label]] }
+trait HasProgram { def program: Signal[Seq[String]] => Signal[Seq[(String,Float)]] }
 
 object NormalTwitterAnalysis extends TwitterAnalysis with HasProgram with Resources {
   def program = input => {
@@ -114,8 +114,7 @@ object NormalTwitterAnalysis extends TwitterAnalysis with HasProgram with Resour
       map(Functions.wordFrequency).
       map(_.filter { case (word,weight) => weight > 1 }).
       map(Functions.normalizeFrequency).
-      map(_.toSeq).
-      map(Functions.createLabels)
+      map(_.toSeq)
   }
 }
 
@@ -135,7 +134,7 @@ object LMSTwitterAnalysis extends TwitterAnalysis with HasProgram with Resources
   val compiledProg = prog.compile(prog.f).apply( () )
 
   trait LMSTwitterProgram extends ReactiveDSL {
-    def f(x: Rep[Unit]): Rep[Signal[Seq[String]] => Signal[Seq[Label]]] =
+    def f(x: Rep[Unit]): Rep[Signal[Seq[String]] => Signal[Seq[(String,Float)]]] =
       (input: Rep[Signal[Seq[String]]]) => {
       input.
         fuseMapRep(unit(Functions.toWords)).
@@ -151,8 +150,7 @@ object LMSTwitterAnalysis extends TwitterAnalysis with HasProgram with Resources
           (x: Map[String,Int]) => x.filter { case (word,weight) => weight > 1 }}
         ).
         fuseMapRep(unit(Functions.normalizeFrequency)).
-        fuseMapRep(unit((x: Map[String,Float]) => x.toSeq)).
-        fuseMapRep(unit(Functions.createLabels))
+        fuseMapRep(unit((x: Map[String,Float]) => x.toSeq))
     }
   }
 }
