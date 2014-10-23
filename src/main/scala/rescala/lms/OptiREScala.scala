@@ -23,7 +23,10 @@ trait Reactivity
 
 trait LMSSyntax
     extends Functions
+    with TupledFunctions
     with MapOps
+    with SetOps
+    with TupleOps
 
 trait ReactivityExp
     extends Reactivity
@@ -36,7 +39,9 @@ trait ReactivityExp
 
 trait LMSProvided
     extends ListOpsExp
+    with TupleOpsExp
     with SeqOpsExp
+    with SetOpsExp
     with MapOpsExp
     with EffectExp
     with OrderingOpsExp
@@ -46,10 +51,12 @@ trait LMSProvided
 
 trait ScalaGenReactivity extends ScalaGenReactiveBase
     with ScalaGenVars
+    with ScalaGenTupleOps
     with ScalaGenSignals
     with ScalaGenMapFusion
     with ScalaGenFibonacci
     with ScalaGenMapOps
+    with ScalaGenSetOps
     with LMSProvidedGen {
   val IR: ReactivityExp
   import IR._
