@@ -16,11 +16,12 @@ import scala.swing.BorderPanel.Position._
 import scala.swing.event._
 import scala.util.Random
 import virtualization.lms.common.CompileScala
+import scala.collection.mutable.{Set => MutableSet}
 
 trait Resources {
-  def stopwords: Set[String] = Source.fromFile("stopwords-en.txt").getLines.toSet
-  def garbage: Set[String] =
-    Set(
+  def stopwords: MutableSet[String] = MutableSet(Source.fromFile("stopwords-en.txt").getLines.toSeq: _*)
+  def garbage: MutableSet[String] =
+    MutableSet(
       "rt", ":)", ":-)", "^-^", "o:)", "o:-)", ":d", ":-d",
       "}:>", "}:->", ":x", "", ":-x", ";)", ";-)", ":(", ":-(",
       ":c", ":-c", ":'(", ":'-(", ":-/", ":>", ":->", ":p", ":-p",
@@ -49,7 +50,7 @@ object Functions {
     }
 
   val normalizeFrequency: Map[String,Int] => Map[String,Float] = freqMap => {
-    val maxFreq = if (freqMap.isEmpty) 1 else freqMap.values.max
+    val maxFreq = if (freqMap.isEmpty) 1 else freqMap.values.head
     freqMap.mapValues { x => x.toFloat / maxFreq }
   }
 
@@ -60,7 +61,7 @@ object Functions {
     label
   }
 
-  val removeWords: Set[String] => Seq[String] => Seq[String] =
+  val removeWords: MutableSet[String] => Seq[String] => Seq[String] =
     ws => _.filterNot(ws)
 }
 
@@ -119,7 +120,7 @@ object NormalTwitterAnalysis extends TwitterAnalysis with HasProgram with Resour
 }
 
 object LMSTwitterAnalysis extends TwitterAnalysis with HasProgram with Resources {
-  def program = compiledProg
+  def program = x => compiledProg(stopwords,garbage,x)
 
   val prog = new LMSTwitterProgram with ReactiveDSLExp with CompileScala { self =>
     override val codegen = new ReactiveDSLGen {
@@ -134,23 +135,31 @@ object LMSTwitterAnalysis extends TwitterAnalysis with HasProgram with Resources
   val compiledProg = prog.compile(prog.f).apply( () )
 
   trait LMSTwitterProgram extends ReactiveDSL {
-    def f(x: Rep[Unit]): Rep[Signal[Seq[String]] => Signal[Seq[(String,Float)]]] =
-      (input: Rep[Signal[Seq[String]]]) => {
-      input.
-        fuseMapRep(unit(Functions.toWords)).
-        fuseMapRep(unit {
-          (x: Seq[Seq[String]]) => x.flatten
-        }).
-        fuseMapRep(unit(Functions.lowercase)).
-        // stemming).
-        fuseMapRep(unit(Functions.removeWords(stopwords))).
-        fuseMapRep(unit(Functions.removeWords(garbage))).
-        fuseMapRep(unit(Functions.wordFrequency)).
-        fuseMapRep(unit {
-          (x: Map[String,Int]) => x.filter { case (word,weight) => weight > 1 }}
-        ).
-        fuseMapRep(unit(Functions.normalizeFrequency)).
-        fuseMapRep(unit((x: Map[String,Float]) => x.toSeq))
-    }
+    def f(x: Rep[Unit]): Rep[((MutableSet[String],MutableSet[String],Signal[Seq[String]])) => Signal[Seq[(String,Float)]]] =
+      fun { (sw: Rep[MutableSet[String]],gb: Rep[MutableSet[String]],input: Rep[Signal[Seq[String]]]) => {
+        input.
+          fuseMap { (x: Rep[Seq[String]]) => x.map(_.split("\\s+").toSeq) }.
+          fuseMap { (x: Rep[Seq[Seq[String]]]) => x.flatten }.
+          fuseMap { (x: Rep[Seq[String]]) => x.map(_.toLowerCase) }.
+          // stemming).
+          fuseMap { (x: Rep[Seq[String]]) => x.filterNot(y => sw.contains(y))}.
+          fuseMap { (x: Rep[Seq[String]]) => x.filterNot(y => gb.contains(y))}.
+          fuseMap { (x: Rep[Seq[String]]) =>
+            x.foldLeft(Map[String,Int]().withDefaultValue(0)) { accAndw =>
+              val acc = accAndw._1
+              val w = accAndw._2
+              acc.insert((w, acc(w)+1))
+            }
+          }.
+          fuseMap { (x: Rep[Map[String,Int]]) =>
+            x.filter { wordAndWeight => wordAndWeight._2 > 1 }
+          }.
+          fuseMapRep { (x: Rep[Map[String,Int]]) =>
+            val maxFreq = if (x.isEmpty) 1 else x.values.max
+            x.mapValues { x => x.toFloat / maxFreq }
+          }.
+          fuseMap((x: Rep[Map[String,Float]]) => x.toSeq)
+      }
+      }
   }
 }
