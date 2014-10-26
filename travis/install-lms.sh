@@ -7,8 +7,9 @@ if ! [ -d "dependencies" ]; then
 fi
 
 cd "dependencies"
-
-git clone "https://github.com/TiarkRompf/virtualization-lms-core"
+# get a forked version that lifts more standard library operations
+# e.g. on Map and Seq
+git clone "https://github.com/markus1189/virtualization-lms-core"
 
 cd "virtualization-lms-core"
 
