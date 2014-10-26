@@ -22,8 +22,7 @@ trait Reactivity
     with LMSSyntax  // Include some syntax from LMS
 
 trait LMSSyntax
-    extends Functions
-    with TupledFunctions
+    extends TupledFunctions
     with MapOps
     with SetOps
     with TupleOps
@@ -49,9 +48,10 @@ trait LMSProvided
     with IfThenElseExp
     with PrimitiveOpsExp
 
-trait ScalaGenReactivity extends ScalaGenReactiveBase
-    with ScalaGenVars
+trait ScalaGenReactivity
+    extends ScalaGenReactiveBase
     with ScalaGenTupleOps
+    with ScalaGenVars
     with ScalaGenSignals
     with ScalaGenMapFusion
     with ScalaGenFibonacci
@@ -64,4 +64,7 @@ trait ScalaGenReactivity extends ScalaGenReactiveBase
 
 trait LMSProvidedGen
     extends ScalaGenEffect
-    with ScalaGenIfThenElse
+    with ScalaGenIfThenElse {
+  val IR: ReactivityExp
+  import IR._
+}
